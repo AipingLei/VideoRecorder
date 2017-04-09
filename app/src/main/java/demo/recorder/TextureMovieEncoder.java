@@ -29,14 +29,15 @@ import android.os.Looper;
 import android.os.Message;
 import android.util.Log;
 
-import com.codoom.demo.gles.EglCore;
-import com.codoom.demo.gles.FullFrameRect;
-import com.codoom.demo.gles.Texture2dProgram;
-import com.codoom.demo.gles.WindowSurface;
 
 import java.io.File;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
+
+import demo.recorder.gles.EglCore;
+import demo.recorder.gles.FullFrameRect;
+import demo.recorder.gles.Texture2dProgram;
+import demo.recorder.gles.WindowSurface;
 
 /**
  * Encode a movie from frames rendered from an external texture image.
