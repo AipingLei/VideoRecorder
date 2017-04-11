@@ -507,7 +507,6 @@ public class Texture2dProgram {
 
 
         GlUtil.checkGlError("draw start");
-
         // Select the program.
         GLES20.glUseProgram(mProgramHandle);
         GlUtil.checkGlError("glUseProgram");
@@ -553,7 +552,7 @@ public class Texture2dProgram {
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, firstVertex, vertexCount);
         GlUtil.checkGlError("glDrawArrays");
 
-        GLES20.glTexCoordPointer(2, GL10.GL_FLOAT, 0, mTextureBuffer);
+        //GLES20.glTexCoordPointer(2, GL10.GL_FLOAT, 0, mTextureBuffer);
 
         // Done -- disable vertex array, texture, and program.
         GLES20.glDisableVertexAttribArray(maPositionLoc);
