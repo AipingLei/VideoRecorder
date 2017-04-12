@@ -23,9 +23,10 @@ package demo.recorder.gles.canvas.textureFilter;
 import android.opengl.GLES20;
 import android.support.annotation.FloatRange;
 
-import com.chillingvan.canvasgl.ICanvasGL;
-import com.chillingvan.canvasgl.OpenGLUtil;
-import com.chillingvan.canvasgl.glcanvas.BasicTexture;
+import demo.recorder.gles.canvas.ICanvasGL;
+import demo.recorder.gles.canvas.OpenGLUtil;
+import demo.recorder.gles.canvas.glcanvas.BasicTexture;
+
 
 /**
  * Created by Chilling on 2016/11/2.

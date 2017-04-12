@@ -22,13 +22,14 @@ package demo.recorder.gles.canvas.glview.texture.gles;
 
 import android.util.Log;
 
-import com.chillingvan.canvasgl.Loggers;
 
 import javax.microedition.khronos.egl.EGL10;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.egl.EGLContext;
 import javax.microedition.khronos.egl.EGLDisplay;
 import javax.microedition.khronos.egl.EGLSurface;
+
+import demo.recorder.gles.canvas.Loggers;
 
 /**
  * Created by Chilling on 2016/11/2.

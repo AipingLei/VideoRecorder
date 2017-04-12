@@ -21,12 +21,13 @@
 package demo.recorder.gles.canvas.textureFilter;
 
 
-import com.chillingvan.canvasgl.glcanvas.BasicTexture;
-import com.chillingvan.canvasgl.glcanvas.GLCanvas;
-import com.chillingvan.canvasgl.glcanvas.RawTexture;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import demo.recorder.gles.canvas.glcanvas.BasicTexture;
+import demo.recorder.gles.canvas.glcanvas.IGLCanvas;
+import demo.recorder.gles.canvas.glcanvas.RawTexture;
 
 /**
  * Created by Chilling on 2016/10/27.
@@ -63,7 +64,7 @@ public class FilterGroup extends BasicTextureFilter {
     }
 
 
-    public BasicTexture draw(BasicTexture initialTexture, GLCanvas glCanvas) {
+    public BasicTexture draw(BasicTexture initialTexture, IGLCanvas IGLCanvas) {
         if (this.initialTexture == initialTexture && outputTexture != null) {
             return outputTexture;
         }
@@ -74,9 +75,9 @@ public class FilterGroup extends BasicTextureFilter {
         for (int i = 0, size = rawTextureList.size(); i < size; i++) {
             RawTexture rawTexture = rawTextureList.get(i);
             TextureFilter textureFilter = mMergedFilters.get(i);
-            glCanvas.beginRenderTarget(rawTexture);
-            glCanvas.drawTexture(drawTexture, 0, 0, drawTexture.getWidth(), drawTexture.getHeight(), textureFilter);
-            glCanvas.endRenderTarget();
+            IGLCanvas.beginRenderTarget(rawTexture);
+            IGLCanvas.drawTexture(drawTexture, 0, 0, drawTexture.getWidth(), drawTexture.getHeight(), textureFilter);
+            IGLCanvas.endRenderTarget();
             drawTexture = rawTexture;
         }
         outputTexture = drawTexture;

@@ -22,33 +22,27 @@ package demo.recorder.gles.canvas;
 
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.util.AttributeSet;
 
-import demo.recorder.R;
 import demo.recorder.gles.canvas.glcanvas.GLPaint;
 import demo.recorder.gles.canvas.glview.GLView;
 
 
-/**
- * Created by Matthew on 2016/10/5.
- */
 
-public class CompareGLView extends GLView {
+public class CompareCanvasView extends GLView {
 
-    private Bitmap baboon;
     Bitmap textBitmap;
     Canvas normalCanvas;
 
 
-    public CompareGLView(Context context) {
+    public CompareCanvasView(Context context) {
         super(context);
     }
 
-    public CompareGLView(Context context, AttributeSet attrs) {
+    public CompareCanvasView(Context context, AttributeSet attrs) {
         super(context, attrs);
         textBitmap = Bitmap.createBitmap(400, 400, Bitmap.Config.ARGB_8888);
         normalCanvas = new Canvas(textBitmap);
@@ -57,21 +51,19 @@ public class CompareGLView extends GLView {
     @Override
     protected void init() {
         super.init();
-        baboon = BitmapFactory.decodeResource(getResources(), R.drawable.baboon);
     }
 
     @Override
     protected void onGLDraw(ICanvasGL canvas) {
 
-
-        CanvasGL.BitmapMatrix matrix = new CanvasGL.BitmapMatrix();
+/*        CanvasGL.BitmapMatrix matrix = new CanvasGL.BitmapMatrix();
         matrix.postScale(2.1f, 2.1f);
         matrix.postRotate(90);
         matrix.postTranslate(90, 120);
         matrix.postScale(0.4f, 0.4f, 140, 150);
         matrix.postRotate(10, 128 , 128);
         matrix.postTranslate(90, -120);
-        canvas.drawBitmap(baboon, matrix);
+        canvas.drawBitmap(baboon, matrix);*/
 
 
         GLPaint paint = new GLPaint();

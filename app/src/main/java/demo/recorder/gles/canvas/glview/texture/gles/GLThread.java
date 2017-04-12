@@ -29,7 +29,6 @@ import android.support.annotation.RequiresApi;
 import android.util.Log;
 import android.view.Choreographer;
 
-import com.chillingvan.canvasgl.glview.texture.GLViewRenderer;
 
 import java.util.ArrayList;
 
@@ -40,6 +39,8 @@ import javax.microedition.khronos.egl.EGLContext;
 import javax.microedition.khronos.egl.EGLDisplay;
 import javax.microedition.khronos.egl.EGLSurface;
 import javax.microedition.khronos.opengles.GL;
+
+import demo.recorder.gles.canvas.glview.texture.GLViewRenderer;
 
 /**
  * Created by Chilling on 2016/10/30.

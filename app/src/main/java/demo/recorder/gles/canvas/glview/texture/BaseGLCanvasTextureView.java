@@ -7,11 +7,12 @@ import android.graphics.Rect;
 import android.support.annotation.ColorInt;
 import android.util.AttributeSet;
 
-import com.chillingvan.canvasgl.CanvasGL;
-import com.chillingvan.canvasgl.ICanvasGL;
-import com.chillingvan.canvasgl.Loggers;
-import com.chillingvan.canvasgl.OpenGLUtil;
-import com.chillingvan.canvasgl.glview.GLView;
+import demo.recorder.gles.canvas.CanvasGL;
+import demo.recorder.gles.canvas.ICanvasGL;
+import demo.recorder.gles.canvas.Loggers;
+import demo.recorder.gles.canvas.OpenGLUtil;
+import demo.recorder.gles.canvas.glview.GLView;
+
 
 /**
  * Created by Chilling on 2016/11/11.

@@ -31,18 +31,19 @@ import android.os.Build;
 import android.os.Handler;
 import android.support.annotation.Nullable;
 
-import com.chillingvan.canvasgl.glcanvas.BasicTexture;
-import com.chillingvan.canvasgl.glcanvas.RawTexture;
-import com.chillingvan.canvasgl.glview.GLView;
-import com.chillingvan.canvasgl.glview.texture.GLSurfaceTextureProducerView;
-import com.chillingvan.canvasgl.glview.texture.GLViewRenderer;
-import com.chillingvan.canvasgl.glview.texture.gles.EglContextWrapper;
-import com.chillingvan.canvasgl.glview.texture.gles.GLThread;
 
 import javax.microedition.khronos.egl.EGL10;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.egl.EGLDisplay;
 import javax.microedition.khronos.egl.EGLSurface;
+
+import demo.recorder.gles.canvas.glcanvas.BasicTexture;
+import demo.recorder.gles.canvas.glcanvas.RawTexture;
+import demo.recorder.gles.canvas.glview.GLView;
+import demo.recorder.gles.canvas.glview.texture.GLSurfaceTextureProducerView;
+import demo.recorder.gles.canvas.glview.texture.GLViewRenderer;
+import demo.recorder.gles.canvas.glview.texture.gles.EglContextWrapper;
+import demo.recorder.gles.canvas.glview.texture.gles.GLThread;
 
 /**
  * Created by Chilling on 2016/11/7.
@@ -236,7 +237,7 @@ public abstract class OffScreenCanvas implements GLViewRenderer {
         if (producedRawTexture == null) {
             producedRawTexture = new RawTexture(width, height, false, producedTextureTarget);
             if (!producedRawTexture.isLoaded()) {
-                producedRawTexture.prepare(mCanvas.getGlCanvas());
+                producedRawTexture.prepare(mCanvas.getIGLCanvas());
             }
             producedSurfaceTexture = new SurfaceTexture(producedRawTexture.getId());
             handler.post(new Runnable() {

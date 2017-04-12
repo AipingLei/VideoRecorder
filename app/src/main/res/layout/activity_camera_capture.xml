@@ -34,10 +34,10 @@
         android:layout_below="@+id/toggleRecording_button"
         android:layout_centerInParent="true" >
 
-        <android.opengl.GLSurfaceView
-            android:id="@+id/cameraPreview_surfaceView"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
+        <demo.recorder.CameraView
+            android:id="@+id/cameraPreviewView"
+            android:layout_width="480dp"
+            android:layout_height="480dp"
             android:layout_gravity="center" />
     </com.codoom.demo.AspectFrameLayout>
 

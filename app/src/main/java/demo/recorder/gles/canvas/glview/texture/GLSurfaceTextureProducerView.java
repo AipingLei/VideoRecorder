@@ -27,11 +27,11 @@ import android.opengl.GLES20;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 
-import com.chillingvan.canvasgl.ICanvasGL;
-import com.chillingvan.canvasgl.glcanvas.BasicTexture;
-import com.chillingvan.canvasgl.glcanvas.RawTexture;
-import com.chillingvan.canvasgl.glview.texture.gles.EglContextWrapper;
-import com.chillingvan.canvasgl.glview.texture.gles.GLThread;
+import demo.recorder.gles.canvas.ICanvasGL;
+import demo.recorder.gles.canvas.glcanvas.BasicTexture;
+import demo.recorder.gles.canvas.glcanvas.RawTexture;
+import demo.recorder.gles.canvas.glview.texture.gles.EglContextWrapper;
+import demo.recorder.gles.canvas.glview.texture.gles.GLThread;
 
 /**
  * Created by Chilling on 2016/11/3.
@@ -94,7 +94,7 @@ public abstract class GLSurfaceTextureProducerView extends GLSharedContextView {
         if (producedRawTexture == null) {
             producedRawTexture = new RawTexture(width, height, false, producedTextureTarget);
             if (!producedRawTexture.isLoaded()) {
-                producedRawTexture.prepare(mCanvas.getGlCanvas());
+                producedRawTexture.prepare(mCanvas.getIGLCanvas());
             }
             producedSurfaceTexture = new SurfaceTexture(producedRawTexture.getId());
             post(new Runnable() {

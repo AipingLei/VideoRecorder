@@ -54,12 +54,12 @@ public abstract class BasicTexture implements Texture {
 
     private boolean mHasBorder;
 
-    protected GLCanvas mCanvasRef = null;
+    protected IGLCanvas mCanvasRef = null;
     private static WeakHashMap<BasicTexture, Object> sAllTextures
             = new WeakHashMap<BasicTexture, Object>();
     private static ThreadLocal sInFinalizer = new ThreadLocal();
 
-    protected BasicTexture(GLCanvas canvas, int id, int state) {
+    protected BasicTexture(IGLCanvas canvas, int id, int state) {
         setAssociatedCanvas(canvas);
         mId = id;
         mState = state;
@@ -72,7 +72,7 @@ public abstract class BasicTexture implements Texture {
         this(null, 0, STATE_UNLOADED);
     }
 
-    protected void setAssociatedCanvas(GLCanvas canvas) {
+    protected void setAssociatedCanvas(IGLCanvas canvas) {
         mCanvasRef = canvas;
     }
 
@@ -139,18 +139,18 @@ public abstract class BasicTexture implements Texture {
     }
 
     @Override
-    public void draw(GLCanvas canvas, int x, int y) {
+    public void draw(IGLCanvas canvas, int x, int y) {
         canvas.drawTexture(this, x, y, getWidth(), getHeight(), new BasicTextureFilter());
     }
 
     @Override
-    public void draw(GLCanvas canvas, int x, int y, int w, int h) {
+    public void draw(IGLCanvas canvas, int x, int y, int w, int h) {
         canvas.drawTexture(this, x, y, w, h, new BasicTextureFilter());
     }
 
-    // onBind is called before GLCanvas binds this secondBitmap.
+    // onBind is called before IGLCanvas binds this secondBitmap.
     // It should make sure the data is uploaded to GL memory.
-    abstract protected boolean onBind(GLCanvas canvas);
+    abstract protected boolean onBind(IGLCanvas canvas);
 
     // Returns the GL secondBitmap target for this secondBitmap (e.g. GL_TEXTURE_2D).
     abstract protected int getTarget();
@@ -175,7 +175,7 @@ public abstract class BasicTexture implements Texture {
     }
 
     private void freeResource() {
-        GLCanvas canvas = mCanvasRef;
+        IGLCanvas canvas = mCanvasRef;
         if (canvas != null && mId != -1) {
             canvas.unloadTexture(this);
             mId = -1; // Don't free it again.

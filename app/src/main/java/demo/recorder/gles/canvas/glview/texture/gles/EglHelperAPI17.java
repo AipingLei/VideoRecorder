@@ -10,9 +10,8 @@ import android.os.Build;
 import android.support.annotation.RequiresApi;
 import android.util.Log;
 
-import com.chillingvan.canvasgl.Loggers;
+import demo.recorder.gles.canvas.Loggers;
 
-import static com.chillingvan.canvasgl.glview.texture.gles.EglHelper.formatEglError;
 
 /**
  * Created by Chilling on 2016/12/29.
@@ -190,5 +189,9 @@ public class EglHelperAPI17 implements IEglHelper {
         String message = formatEglError(function, error);
         Loggers.e("EglHelper", "throwEglException tid=" + Thread.currentThread().getId() + " " + message);
         throw new RuntimeException(message);
+    }
+
+    public static String formatEglError(String function, int error) {
+        return function + " failed: " + EGLLogWrapper.getErrorString(error);
     }
 }

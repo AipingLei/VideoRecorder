@@ -36,10 +36,13 @@ import demo.recorder.gles.canvas.CanvasGL;
 import demo.recorder.gles.canvas.ICanvasGL;
 import demo.recorder.gles.canvas.OpenGLUtil;
 
-/**
- * Created by Matthew on 2016/10/5.
- */
-
+/** 
+ * description: describe the class
+ * create by: leiap
+ * create date: 2017/4/12
+ * update date: 2017/4/12
+ * version: 1.0
+*/
 public abstract class GLView extends GLSurfaceView implements GLSurfaceView.Renderer {
 
 
@@ -73,7 +76,6 @@ public abstract class GLView extends GLSurfaceView implements GLSurfaceView.Rend
     @Override
     public void onSurfaceCreated(GL10 gl, EGLConfig config) {
         mCanvas = new CanvasGL();
-
     }
 
     @Override

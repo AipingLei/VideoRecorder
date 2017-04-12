@@ -1,6 +1,7 @@
 package demo.recorder.gles.canvas.shapeFilter;
 
-import com.chillingvan.canvasgl.ICanvasGL;
+
+import demo.recorder.gles.canvas.ICanvasGL;
 
 /**
  * Created by Chilling on 2016/11/11.

@@ -21,7 +21,7 @@
 package demo.recorder.gles.canvas.glcanvas;
 
 
-// Texture is a rectangular image which can be drawn on GLCanvas.
+// Texture is a rectangular image which can be drawn on IGLCanvas.
 // The isOpaque() function gives a hint about whether the secondBitmap is opaque,
 // so the drawing can be done faster.
 //
@@ -42,7 +42,7 @@ package demo.recorder.gles.canvas.glcanvas;
 public interface Texture {
     public int getWidth();
     public int getHeight();
-    public void draw(GLCanvas canvas, int x, int y);
-    public void draw(GLCanvas canvas, int x, int y, int w, int h);
+    public void draw(IGLCanvas canvas, int x, int y);
+    public void draw(IGLCanvas canvas, int x, int y, int w, int h);
     public boolean isOpaque();
 }

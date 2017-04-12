@@ -26,15 +26,16 @@ import android.opengl.GLES20;
 import android.opengl.Matrix;
 import android.support.annotation.NonNull;
 
-import com.chillingvan.canvasgl.ICanvasGL;
-import com.chillingvan.canvasgl.glcanvas.BasicTexture;
-import com.chillingvan.canvasgl.glcanvas.BitmapTexture;
-import com.chillingvan.canvasgl.glcanvas.GLES20Canvas;
-import com.chillingvan.canvasgl.glcanvas.TextureMatrixTransformer;
 
 import java.util.Arrays;
 
-import static com.chillingvan.canvasgl.CanvasGL.BitmapMatrix.MATRIX_SIZE;
+import demo.recorder.gles.canvas.ICanvasGL;
+import demo.recorder.gles.canvas.glcanvas.BasicTexture;
+import demo.recorder.gles.canvas.glcanvas.BitmapTexture;
+import demo.recorder.gles.canvas.glcanvas.GLES20Canvas;
+import demo.recorder.gles.canvas.glcanvas.TextureMatrixTransformer;
+
+import static demo.recorder.gles.canvas.CanvasGL.BitmapMatrix.MATRIX_SIZE;
 
 /**
  * Created by Chilling on 2016/10/17.

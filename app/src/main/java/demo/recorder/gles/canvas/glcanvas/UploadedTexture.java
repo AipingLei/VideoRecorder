@@ -187,7 +187,7 @@ public abstract class UploadedTexture extends BasicTexture {
      * Updates the content on GPU's memory.
      * @param canvas
      */
-    public void updateContent(GLCanvas canvas) {
+    public void updateContent(IGLCanvas canvas) {
         if (!isLoaded()) {
             if (mThrottled && ++sUploadedCount > UPLOAD_LIMIT) {
                 return;
@@ -211,7 +211,7 @@ public abstract class UploadedTexture extends BasicTexture {
         return sUploadedCount > UPLOAD_LIMIT;
     }
 
-    private void uploadToCanvas(GLCanvas canvas) {
+    private void uploadToCanvas(IGLCanvas canvas) {
 
         Bitmap bitmap = getBitmap();
         if (bitmap != null) {
@@ -275,7 +275,7 @@ public abstract class UploadedTexture extends BasicTexture {
     }
 
     @Override
-    public boolean onBind(GLCanvas canvas) {
+    public boolean onBind(IGLCanvas canvas) {
         updateContent(canvas);
         return isContentValid();
     }

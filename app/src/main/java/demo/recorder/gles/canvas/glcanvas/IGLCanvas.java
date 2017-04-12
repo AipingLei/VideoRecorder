@@ -29,19 +29,19 @@ import demo.recorder.gles.canvas.textureFilter.TextureFilter;
 
 
 //
-// GLCanvas gives a convenient interface to draw using OpenGL.
+// IGLCanvas gives a convenient interface to draw using OpenGL.
 //
 // When a rectangle is specified in this interface, it means the region
 // [x, x+width) * [y, y+height)
 //
-public interface GLCanvas {
+public interface IGLCanvas {
 
     public GLId getGLId();
 
-    // Tells GLCanvas the size of the underlying GL surface. This should be
+    // Tells IGLCanvas the size of the underlying GL surface. This should be
     // called before first drawing and when the size of GL surface is changed.
     // This is called by GLRoot and should not be called by the clients
-    // who only want to draw on the GLCanvas. Both width and height must be
+    // who only want to draw on the IGLCanvas. Both width and height must be
     // nonnegative.
     public abstract void setSize(int width, int height);
 
@@ -208,7 +208,7 @@ public interface GLCanvas {
 
     /**
      * After LightCycle makes GL calls, this method is called to restore the GL
-     * configuration to the one expected by GLCanvas.
+     * configuration to the one expected by IGLCanvas.
      */
     public abstract void recoverFromLightCycle();
 

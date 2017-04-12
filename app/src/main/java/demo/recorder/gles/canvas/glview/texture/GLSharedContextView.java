@@ -25,9 +25,10 @@ import android.graphics.SurfaceTexture;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 
-import com.chillingvan.canvasgl.ICanvasGL;
-import com.chillingvan.canvasgl.glcanvas.BasicTexture;
-import com.chillingvan.canvasgl.glview.texture.gles.EglContextWrapper;
+import demo.recorder.gles.canvas.ICanvasGL;
+import demo.recorder.gles.canvas.glcanvas.BasicTexture;
+import demo.recorder.gles.canvas.glview.texture.gles.EglContextWrapper;
+
 
 /**
  * Created by Chilling on 2016/11/5.

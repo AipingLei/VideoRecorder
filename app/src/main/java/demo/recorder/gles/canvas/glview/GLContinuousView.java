@@ -24,7 +24,8 @@ import android.content.Context;
 import android.opengl.GLSurfaceView;
 import android.util.AttributeSet;
 
-import com.chillingvan.canvasgl.ICanvasGL;
+import demo.recorder.gles.canvas.ICanvasGL;
+
 
 /**
  * Created by Chilling on 2016/10/24.

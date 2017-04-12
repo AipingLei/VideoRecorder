@@ -26,13 +26,13 @@ import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.view.TextureView;
 
-import com.chillingvan.canvasgl.ICanvasGL;
-import com.chillingvan.canvasgl.Loggers;
-import com.chillingvan.canvasgl.glview.texture.gles.EglContextWrapper;
-import com.chillingvan.canvasgl.glview.texture.gles.GLThread;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import demo.recorder.gles.canvas.ICanvasGL;
+import demo.recorder.gles.canvas.Loggers;
+import demo.recorder.gles.canvas.glview.texture.gles.EglContextWrapper;
+import demo.recorder.gles.canvas.glview.texture.gles.GLThread;
 
 /**
  * Created by Chilling on 2016/10/31.

@@ -32,7 +32,7 @@
     android:orientation="vertical"
     tools:context="demo.recorder.gles.canvas.CompareCanvasActivity">
 
-    <demo.recorder.gles.canvas.CompareGLView
+    <demo.recorder.gles.canvas.CompareCanvasView
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"

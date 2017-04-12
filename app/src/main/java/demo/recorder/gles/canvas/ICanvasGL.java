@@ -30,7 +30,7 @@ import android.support.annotation.Nullable;
 
 import demo.recorder.gles.canvas.glcanvas.BasicTexture;
 import demo.recorder.gles.canvas.glcanvas.BitmapTexture;
-import demo.recorder.gles.canvas.glcanvas.GLCanvas;
+import demo.recorder.gles.canvas.glcanvas.IGLCanvas;
 import demo.recorder.gles.canvas.glcanvas.GLPaint;
 import demo.recorder.gles.canvas.glcanvas.RawTexture;
 import demo.recorder.gles.canvas.textureFilter.TextureFilter;
@@ -48,7 +48,7 @@ public interface ICanvasGL {
 
     void endRenderTarget();
 
-    GLCanvas getGlCanvas();
+    IGLCanvas getIGLCanvas();
 
     void drawSurfaceTexture(BasicTexture texture, @Nullable SurfaceTexture surfaceTexture, int left, int top, int right, int bottom);
 

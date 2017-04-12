@@ -28,11 +28,6 @@ import android.opengl.GLUtils;
 import android.opengl.Matrix;
 import android.util.Log;
 
-import com.chillingvan.canvasgl.Loggers;
-import com.chillingvan.canvasgl.shapeFilter.BasicDrawShapeFilter;
-import com.chillingvan.canvasgl.shapeFilter.DrawShapeFilter;
-import com.chillingvan.canvasgl.textureFilter.BasicTextureFilter;
-import com.chillingvan.canvasgl.textureFilter.TextureFilter;
 
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
@@ -43,7 +38,13 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-public class GLES20Canvas implements GLCanvas {
+import demo.recorder.gles.canvas.Loggers;
+import demo.recorder.gles.canvas.shapeFilter.BasicDrawShapeFilter;
+import demo.recorder.gles.canvas.shapeFilter.DrawShapeFilter;
+import demo.recorder.gles.canvas.textureFilter.BasicTextureFilter;
+import demo.recorder.gles.canvas.textureFilter.TextureFilter;
+
+public class GLES20Canvas implements IGLCanvas {
     // ************** Constants **********************
     private static final String TAG = GLES20Canvas.class.getSimpleName();
     private static final int FLOAT_SIZE = Float.SIZE / Byte.SIZE;
