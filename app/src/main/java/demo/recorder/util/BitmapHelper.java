@@ -1,4 +1,4 @@
-package demo.recorder;
+package demo.recorder.util;
 
 import android.graphics.Bitmap;
 

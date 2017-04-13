@@ -43,6 +43,7 @@ import demo.recorder.gles.canvas.glcanvas.IGLCanvas;
 import demo.recorder.gles.canvas.glcanvas.GLES20Canvas;
 import demo.recorder.gles.canvas.glcanvas.GLPaint;
 import demo.recorder.gles.canvas.glcanvas.RawTexture;
+import demo.recorder.gles.canvas.glcanvas.UploadedTexture;
 import demo.recorder.gles.canvas.shapeFilter.BasicDrawShapeFilter;
 import demo.recorder.gles.canvas.shapeFilter.DrawCircleFilter;
 import demo.recorder.gles.canvas.shapeFilter.DrawShapeFilter;
@@ -144,6 +145,12 @@ public class CanvasGL implements ICanvasGL {
         restore();
     }
 
+    public void drawBitmap(Bitmap bitmap, int left, int top, boolean invalidata) {
+        UploadedTexture basicTexture = (UploadedTexture)getTexture(bitmap, basicTextureFilter);
+        if (invalidata) basicTexture.invalidateContent();
+        IGLCanvas.drawTexture(basicTexture, left, top, bitmap.getWidth(), bitmap.getHeight(), basicTextureFilter);
+    }
+
     @Override
     public void drawBitmap(Bitmap bitmap, Rect src, RectF dst) {
         drawBitmap(bitmap, new RectF(src), dst, basicTextureFilter);
@@ -189,14 +196,14 @@ public class CanvasGL implements ICanvasGL {
         throwIfCannotDraw(bitmap);
 
         BasicTexture resultTexture;
-        resultTexture = new BitmapTexture(bitmap);
-        bitmapTextureMap.put(bitmap, resultTexture);
-      /*  if (bitmapTextureMap.containsKey(bitmap)) {
+      /*  resultTexture = new BitmapTexture(bitmap);
+        bitmapTextureMap.put(bitmap, resultTexture);*/
+        if (bitmapTextureMap.containsKey(bitmap)) {
             resultTexture = bitmapTextureMap.get(bitmap);
         } else {
             resultTexture = new BitmapTexture(bitmap);
             bitmapTextureMap.put(bitmap, resultTexture);
-        }*/
+        }
 
         if (textureFilter instanceof FilterGroup) {
             FilterGroup filterGroup = (FilterGroup) textureFilter;
@@ -247,9 +254,6 @@ public class CanvasGL implements ICanvasGL {
     }
 
     /**
-     * @param saveFlags {@link IGLCanvas.SAVE_FLAG_ALL}
-     *                  {@link IGLCanvas.SAVE_FLAG_ALPHA}
-     *                  {@link IGLCanvas.SAVE_FLAG_MATRIX}
      */
     @Override
     public void save(int saveFlags) {
@@ -347,6 +351,7 @@ public class CanvasGL implements ICanvasGL {
             }
         }
     }
+
 
     public static class BitmapMatrix {
         public static final int TRANSLATE_X = 3;

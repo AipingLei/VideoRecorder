@@ -31,14 +31,17 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemSelectedListener;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 
 
 import java.io.File;
@@ -133,18 +136,16 @@ public class CameraCaptureActivity extends Activity {
     private static final String TAG = MainActivity.TAG;
     private static final boolean VERBOSE = false;
     MediaRecordService mediaRecordService;
+    ImageView mRecordButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_media_recorder);
-        File dir =  this.getExternalFilesDir("se7en");
-        if (!dir.exists()){
-            dir.mkdir();
-        }
-        File outputFile = new File(dir.getAbsolutePath(), "camera-test.mp4");
         CameraPreview sGLView = (CameraPreview) findViewById(R.id.record_preview);
-        mediaRecordService = new MediaRecordService(sGLView);
+        mRecordButton = (ImageView) findViewById(R.id.record_button);
+        mRecordButton.setOnTouchListener(mOnVideoControllerTouchListener);
+        mediaRecordService = new MediaRecordService(this,sGLView);
         Log.d(TAG, "onCreate complete: " + this);
     }
 
@@ -168,6 +169,40 @@ public class CameraCaptureActivity extends Activity {
         super.onDestroy();
         mediaRecordService.destroy();
     }
+
+    private boolean isRecord = false;
+
+    /** 点击屏幕录制 */
+    private View.OnTouchListener mOnVideoControllerTouchListener = new View.OnTouchListener() {
+
+        @Override
+        public boolean onTouch(View v, MotionEvent event) {
+            if (mediaRecordService == null) {
+                return false;
+            }
+
+            switch (event.getAction()) {
+                case MotionEvent.ACTION_DOWN:
+                    break;
+
+                case MotionEvent.ACTION_UP:
+                    boolean sRecord = !isRecord;
+                    if (sRecord){
+                        mediaRecordService.startRecord();
+                        mRecordButton.setBackgroundResource(R.drawable.squarecamera__camera_snap_selected);
+                        Toast.makeText(CameraCaptureActivity.this,"start recording!",Toast.LENGTH_LONG);
+                    }else {
+                        // 暂停
+                        mRecordButton.setBackgroundResource(R.drawable.squarecamera__camera_snap_unselected);
+                        mediaRecordService.stopRecord();
+                        Toast.makeText(CameraCaptureActivity.this,"stop recording!",Toast.LENGTH_LONG);
+                    }
+                    break;
+            }
+            return true;
+        }
+
+    };
 
 }
 

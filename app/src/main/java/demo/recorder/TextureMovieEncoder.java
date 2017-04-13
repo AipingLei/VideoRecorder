@@ -33,11 +33,14 @@ import android.util.Log;
 import java.io.File;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.List;
 
 import demo.recorder.gles.EglCore;
 import demo.recorder.gles.FullFrameRect;
 import demo.recorder.gles.Texture2dProgram;
 import demo.recorder.gles.WindowSurface;
+import demo.recorder.util.BitmapHelper;
 
 /**
  * Encode a movie from frames rendered from an external texture image.
@@ -90,6 +93,12 @@ public class TextureMovieEncoder implements Runnable {
     private boolean mReady;
     private boolean mRunning;
     private Bitmap mBitmap;
+    private long mStartRecordTimeNanos = 0; // 开始录制的时间
+    private long mRecordTotalTimeNanos = 0; // 已录制的总时间
+    private List<Long> mPauseTimeStamp = new ArrayList<Long>();
+    private List<Long> mResumeTimeStamp = new ArrayList<Long>();
+    private boolean mPause;
+    private long mTimeStamp;
 
     /**
      * Encoder configuration.
@@ -108,11 +117,28 @@ public class TextureMovieEncoder implements Runnable {
         final int mBitRate;
         final EGLContext mEglContext;
 
-        public EncoderConfig(File outputFile, int width, int height, int bitRate,
+        final int mPreviewWidth;
+        final int mPreviewHeight;
+
+
+/*        public EncoderConfig(File outputFile, int width, int height, int bitRate,
                              EGLContext sharedEglContext) {
             mOutputFile = outputFile;
             mWidth = width;
             mHeight = height;
+            mBitRate = bitRate;
+            mEglContext = sharedEglContext;
+        }*/
+
+        public EncoderConfig(File outputFile, int width, int height, int bitRate, int previewWidth, int previewHeight,
+                             EGLContext sharedEglContext) {
+            mOutputFile = outputFile;
+            mWidth = width;
+            mHeight = height;
+
+            mPreviewWidth = previewWidth;
+            mPreviewHeight = previewHeight;
+
             mBitRate = bitRate;
             mEglContext = sharedEglContext;
         }
@@ -145,6 +171,7 @@ public class TextureMovieEncoder implements Runnable {
                 try {
                     mReadyFence.wait();
                 } catch (InterruptedException ie) {
+                    ie.printStackTrace();
                     // ignore
                 }
             }
@@ -162,9 +189,20 @@ public class TextureMovieEncoder implements Runnable {
      * so we can provide reasonable status UI (and let the caller know that movie encoding
      * has completed).
      */
-    public void stopRecording() {
+    public void stopRecording(OnStopOverListener onStopOverListener) {
+       /* mHandler.sendMessage(mHandler.obtainMessage(MSG_STOP_RECORDING));
+        mHandler.sendMessage(mHandler.obtainMessage(MSG_QUIT));*/
+        // We don't know when these will actually finish (or even start).  We don't want to
+        // delay the UI thread though, so we return immediately.
+
+        mPauseTimeStamp.clear();
+        mResumeTimeStamp.clear();
         mHandler.sendMessage(mHandler.obtainMessage(MSG_STOP_RECORDING));
-        mHandler.sendMessage(mHandler.obtainMessage(MSG_QUIT));
+        Message m = mHandler.obtainMessage(MSG_QUIT);
+        m.obj = onStopOverListener;
+        mHandler.sendMessage(m);
+        mStartRecordTimeNanos = 0; // 重置开始录制时间
+        mRecordTotalTimeNanos = 0;
         // We don't know when these will actually finish (or even start).  We don't want to
         // delay the UI thread though, so we return immediately.
     }
@@ -217,7 +255,7 @@ public class TextureMovieEncoder implements Runnable {
             Log.w(TAG, "HEY: got SurfaceTexture with timestamp of zero");
             return;
         }
-
+        mTimeStamp = timestamp;
         mHandler.sendMessage(mHandler.obtainMessage(MSG_FRAME_AVAILABLE,
                 (int) (timestamp >> 32), (int) timestamp, transform));
     }
@@ -252,7 +290,6 @@ public class TextureMovieEncoder implements Runnable {
             mReadyFence.notify();
         }
         Looper.loop();
-
         Log.d(TAG, "Encoder thread exiting");
         synchronized (mReadyFence) {
             mReady = mRunning = false;
@@ -281,6 +318,7 @@ public class TextureMovieEncoder implements Runnable {
                 Log.w(TAG, "EncoderHandler.handleMessage: encoder is null");
                 return;
             }
+
 
             switch (what) {
                 case MSG_START_RECORDING:
@@ -457,5 +495,28 @@ public class TextureMovieEncoder implements Runnable {
         GLES20.glClearColor(1.0f, 0.0f, 1.0f, 1.0f);
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);*/
         GLES20.glDisable(GLES20.GL_SCISSOR_TEST);
+    }
+    /**
+     * 编码停停止后回调
+     *
+     * @author leiap
+     */
+    public interface OnStopOverListener {
+        void onStopOver();
+    }
+    /**
+     * 获取已录制的时间,单位：纳秒
+     *
+     * @return
+     */
+    public long getRecordedTimeNanos() {
+        return this.mRecordTotalTimeNanos;
+    }
+
+    public void pause() {
+        if (!mPause) {
+            mPauseTimeStamp.add(mTimeStamp);
+            mPause = true;
+        }
     }
 }

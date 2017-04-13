@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package demo.recorder;
+package demo.recorder.util;
 
 import android.app.Activity;
 import android.content.Context;
@@ -29,6 +29,8 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
+
+import demo.recorder.MainActivity;
 
 /**
  * Camera-related utility functions.

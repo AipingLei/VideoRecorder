@@ -1,6 +1,11 @@
 package demo.recorder.ui;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.PixelFormat;
 import android.graphics.SurfaceTexture;
 import android.opengl.GLES11Ext;
@@ -14,12 +19,9 @@ import android.util.Log;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
-import demo.recorder.CameraCaptureActivity;
 import demo.recorder.gles.canvas.CanvasGL;
-import demo.recorder.gles.canvas.ICanvasGL;
 import demo.recorder.gles.canvas.glcanvas.CameraTexture;
 import demo.recorder.media.TexureObserver;
-import demo.recorder.media.VideoRecordCore;
 
 /**
  * description: describe the class
@@ -39,11 +41,13 @@ public  class CameraPreview extends GLSurfaceView implements GLSurfaceView.Rende
     protected GL10 gl;
 
     private int mTextureId;
-
     private SurfaceTexture mSurfaceTexture;
-
-    private Handler mCameraHandler;
     private TexureObserver mObServer;
+    private Bitmap bitmap;
+    private Canvas normalCanvas;
+    Paint mPaint = new Paint();
+
+
 
     public CameraPreview(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -64,6 +68,12 @@ public  class CameraPreview extends GLSurfaceView implements GLSurfaceView.Rende
         getHolder().setFormat(PixelFormat.TRANSLUCENT);
         setRenderer(this);
         setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
+        bitmap = Bitmap.createBitmap(480,480, Bitmap.Config.ARGB_8888);
+        mPaint = new Paint();
+        mPaint.setColor(Color.BLUE);
+        mPaint.setAntiAlias(true);
+        mPaint.setStrokeWidth((float) 3.0);              //线宽
+        mPaint.setStyle(Paint.Style.STROKE);
     }
 
     @Override
@@ -79,13 +89,12 @@ public  class CameraPreview extends GLSurfaceView implements GLSurfaceView.Rende
         mSurfaceTexture = new SurfaceTexture(mTextureId);
         mObServer.onSurfaceCreated(mSurfaceTexture);
         // Tell the UI thread to enable the camera preview.
-        mCameraHandler.sendMessage(mCameraHandler.obtainMessage(
-                VideoRecordCore.CameraHandler.MSG_SET_SURFACE_TEXTURE, mSurfaceTexture));
     }
 
     @Override
     public void onSurfaceChanged(GL10 gl, int width, int height) {
         mCanvas.setSize(width, height);
+        mObServer.onSurfaceChanged(gl,width,height);
     }
 
     @Override
@@ -109,17 +118,34 @@ public  class CameraPreview extends GLSurfaceView implements GLSurfaceView.Rende
         mFullScreen.drawFrame(mTextureId, mSTMatrix);*/
         this.gl = gl;
         mCanvas.clearBuffer();
-        onGLDraw(mCanvas);
+        onGLCanvasDraw(mCanvas);
+        mObServer.onDrawFrame(mSurfaceTexture,mTextureId);
     }
 
-    private void onGLDraw(CanvasGL mCanvas) {
-        mCanvas.drawSurfaceTexture(mTexture,mSurfaceTexture,0,0,mIncomingWidth,mIncomingHeight);
+
+    int[] prePoint = new int[2];
+    int mFramecount;
+
+    private void onGLCanvasDraw(CanvasGL aCanvas) {
+        mFramecount++;
+        //normalCanvas = new Canvas(bitmap);
+        aCanvas.drawSurfaceTexture(mTexture,mSurfaceTexture,0,0,mIncomingWidth,mIncomingHeight);
+       /* boolean invalidata = false;
+        if (mFramecount % 10 ==0){
+            Path path = new Path();                     //Path对象
+            path.moveTo(prePoint[0], prePoint[1]);                         //起始点
+            int fator = (mFramecount % 20 == 0)? -1:1;
+            prePoint[0] += 20;
+            if (prePoint[0] > 480) prePoint[0]=0;
+            prePoint[1] += 70*fator;
+            path.lineTo(prePoint[0], prePoint[1]);
+            normalCanvas.drawPath(path, mPaint);                   //绘制任意多边形
+            aCanvas.drawBitmap(bitmap, 0, 0,true);
+        }else{
+            aCanvas.drawBitmap(bitmap, 0, 0,false);
+        }*/
     }
 
-  /*  *//**
-     * May call twice at first.
-     *//*
-    protected abstract void onGLDraw(ICanvasGL canvas);*/
 
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
@@ -250,11 +276,4 @@ public  class CameraPreview extends GLSurfaceView implements GLSurfaceView.Rende
            // Draw a flashing box if we're recording.  This only appears on screen.
            showBox = (mRecordingStatus == RECORDING_ON);
        }*/
-    public Handler getCameraHandler() {
-        return mCameraHandler;
-    }
-
-    public void setCameraHandler(Handler mCameraHandler) {
-        this.mCameraHandler = mCameraHandler;
-    }
 }

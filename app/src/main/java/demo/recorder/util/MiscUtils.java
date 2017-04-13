@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package demo.recorder;
+package demo.recorder.util;
 
 import android.app.Activity;
 import android.content.Context;
@@ -27,6 +27,8 @@ import java.io.FilenameFilter;
 import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import demo.recorder.MainActivity;
 
 /**
  * Some handy utilities.

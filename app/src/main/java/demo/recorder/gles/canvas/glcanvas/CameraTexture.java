@@ -21,7 +21,7 @@ public class CameraTexture extends BasicTexture{
     private static final String TAG = "CameraTexture";
 
     private final boolean mOpaque;
-    private boolean mIsFlipped;
+    private boolean mIsFlipped = true;
     private int target = GLES11Ext.GL_TEXTURE_EXTERNAL_OES;
 
     public CameraTexture(int width, int height, boolean opaque) {
