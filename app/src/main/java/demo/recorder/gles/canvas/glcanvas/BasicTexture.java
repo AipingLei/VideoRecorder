@@ -99,6 +99,11 @@ public abstract class BasicTexture implements Texture {
         return mId;
     }
 
+
+    public void setId(int mId) {
+        this.mId = mId;
+    }
+
     @Override
     public int getWidth() {
         return mWidth;

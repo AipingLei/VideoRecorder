@@ -19,8 +19,6 @@ package demo.recorder;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.Paint;
-import android.graphics.Path;
 import android.graphics.SurfaceTexture;
 import android.opengl.EGLContext;
 import android.opengl.GLES20;
@@ -36,11 +34,14 @@ import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.microedition.khronos.opengles.GL11;
+
 import demo.recorder.gles.EglCore;
 import demo.recorder.gles.FullFrameRect;
 import demo.recorder.gles.Texture2dProgram;
 import demo.recorder.gles.WindowSurface;
-import demo.recorder.util.BitmapHelper;
+import demo.recorder.gles.canvas.CanvasGL;
+import demo.recorder.gles.canvas.glcanvas.BitmapTexture;
 
 /**
  * Encode a movie from frames rendered from an external texture image.
@@ -81,7 +82,6 @@ public class TextureMovieEncoder implements Runnable {
     // ----- accessed exclusively by encoder thread -----
     private WindowSurface mInputWindowSurface;
     private EglCore mEglCore;
-    private FullFrameRect mFullScreen;
     private int mTextureId;
     private int mFrameNum;
     private VideoEncoderCore mVideoEncoder;
@@ -92,13 +92,15 @@ public class TextureMovieEncoder implements Runnable {
     private Object mReadyFence = new Object();      // guards ready/running
     private boolean mReady;
     private boolean mRunning;
-    private Bitmap mBitmap;
     private long mStartRecordTimeNanos = 0; // 开始录制的时间
     private long mRecordTotalTimeNanos = 0; // 已录制的总时间
     private List<Long> mPauseTimeStamp = new ArrayList<Long>();
     private List<Long> mResumeTimeStamp = new ArrayList<Long>();
     private boolean mPause;
     private long mTimeStamp;
+    private FullFrameRect mFullScreen;
+    private BitmapTexture mBitmapTexture;
+    private CanvasGL mGLCanvas;
 
     /**
      * Encoder configuration.
@@ -119,16 +121,6 @@ public class TextureMovieEncoder implements Runnable {
 
         final int mPreviewWidth;
         final int mPreviewHeight;
-
-
-/*        public EncoderConfig(File outputFile, int width, int height, int bitRate,
-                             EGLContext sharedEglContext) {
-            mOutputFile = outputFile;
-            mWidth = width;
-            mHeight = height;
-            mBitRate = bitRate;
-            mEglContext = sharedEglContext;
-        }*/
 
         public EncoderConfig(File outputFile, int width, int height, int bitRate, int previewWidth, int previewHeight,
                              EGLContext sharedEglContext) {
@@ -374,16 +366,21 @@ public class TextureMovieEncoder implements Runnable {
     private void handleFrameAvailable(float[] transform, long timestampNanos) {
         if (VERBOSE) Log.d(TAG, "handleFrameAvailable tr=" + transform);
         mVideoEncoder.drainEncoder(false);
-        mFullScreen.drawFrame(mTextureId, transform);
+        //mGLCanvas.drawSurfaceTexture(mBitmapTexture,transform,0,0,mInputWindowSurface.getWidth(),mInputWindowSurface.getHeight());
+        //mFullScreen.drawFrame(mTextureId, transform);
         drawBox(mFrameNum++);
         //drawBitmap();
         mInputWindowSurface.setPresentationTime(timestampNanos);
         mInputWindowSurface.swapBuffers();
+        if (mStartRecordTimeNanos == 0) {
+            mStartRecordTimeNanos = timestampNanos;
+        }
+        mRecordTotalTimeNanos = timestampNanos - mStartRecordTimeNanos;
     }
 
     int j = 0;
 
-    private void drawBitmap() {
+   /* private void drawBitmap() {
         Canvas canvas = new Canvas(mBitmap);
         canvas.drawColor(Color.TRANSPARENT);
         Paint paint = new Paint();
@@ -398,7 +395,7 @@ public class TextureMovieEncoder implements Runnable {
             path.lineTo((j+1)*50, 300);                           //连线到下一点
         }
         canvas.drawPath(path, paint);                   //绘制任意多边形
-    }
+    }*/
 
     /**
      * Handles a request to stop encoding.
@@ -409,12 +406,24 @@ public class TextureMovieEncoder implements Runnable {
         releaseEncoder();
     }
 
+    private Bitmap mBitmap;
+
     /**
      * Sets the texture name that SurfaceTexture will use when frames are received.
      */
     private void handleSetTexture(int id) {
         //Log.d(TAG, "handleSetTexture " + id);
-        mTextureId = id;
+        mTextureId =  bindTexure(id);
+    }
+
+    private int bindTexure(int id) {
+        if (mBitmapTexture != null) return mBitmapTexture.getId();
+        if (mBitmap != null) mBitmap.recycle();
+        mBitmap = Bitmap.createBitmap(480,480, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas();
+        canvas.drawColor(Color.WHITE);
+        mBitmapTexture = mGLCanvas.bindBitmapToTexture(id,mBitmap);
+        return  mBitmapTexture.getId();
     }
 
     /**
@@ -440,6 +449,7 @@ public class TextureMovieEncoder implements Runnable {
         // Create new programs and such for the new context.
         mFullScreen = new FullFrameRect(
                 new Texture2dProgram(Texture2dProgram.ProgramType.TEXTURE_EXT));
+        mGLCanvas = new CanvasGL();
     }
 
     private void prepareEncoder(EGLContext sharedContext, int width, int height, int bitRate,
@@ -449,14 +459,12 @@ public class TextureMovieEncoder implements Runnable {
         } catch (IOException ioe) {
             throw new RuntimeException(ioe);
         }
+        mGLCanvas = new CanvasGL();
         mEglCore = new EglCore(sharedContext, EglCore.FLAG_RECORDABLE);
         mInputWindowSurface = new WindowSurface(mEglCore, mVideoEncoder.getInputSurface(), true);
         mInputWindowSurface.makeCurrent();
-
         mFullScreen = new FullFrameRect(
                 new Texture2dProgram(Texture2dProgram.ProgramType.TEXTURE_EXT));
-        mBitmap = BitmapHelper.createBitmap(width,height);
-
     }
 
     private void releaseEncoder() {
@@ -473,11 +481,6 @@ public class TextureMovieEncoder implements Runnable {
             mEglCore.release();
             mEglCore = null;
         }
-        if (mBitmap != null){
-            mBitmap.recycle();
-            mBitmap = null;
-        }
-
     }
     int i = 0;
     /**
@@ -494,11 +497,6 @@ public class TextureMovieEncoder implements Runnable {
             GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
         }
         i+=5;
-
-
-      /*  GLES20.glScissor(xpos, 0, 100, 100);
-        GLES20.glClearColor(1.0f, 0.0f, 1.0f, 1.0f);
-        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);*/
         GLES20.glDisable(GLES20.GL_SCISSOR_TEST);
     }
     /**

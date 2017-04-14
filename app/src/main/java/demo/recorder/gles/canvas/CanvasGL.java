@@ -130,6 +130,10 @@ public class CanvasGL implements ICanvasGL {
         }
     }
 
+    public void drawSurfaceTexture(BasicTexture texture, float[] surfaceTextureMatrix, int left, int top, int right, int bottom) {
+        IGLCanvas.drawTexture(texture, surfaceTextureMatrix, left, top, right - left, bottom - top, basicTextureFilter);
+    }
+
 
     @Override
     public void drawBitmap(Bitmap bitmap, BitmapMatrix matrix) {
