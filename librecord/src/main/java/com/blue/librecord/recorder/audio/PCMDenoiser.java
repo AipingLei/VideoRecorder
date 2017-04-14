@@ -1,11 +1,11 @@
-package demo.recorder.media.audio;
+package com.blue.librecord.recorder.audio;
 
+import com.iflytek.codec.ffmpeg.encoder.MP4EncoderSoftware;
+import com.iflytek.lib.libspeex.SpeexWrapper;
 
 import java.io.BufferedOutputStream;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-
-import demo.recorder.encoder.MP4EncoderSoftware;
 
 /**
  * 音频降噪

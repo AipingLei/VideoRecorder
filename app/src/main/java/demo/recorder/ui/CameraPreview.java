@@ -80,7 +80,7 @@ public  class CameraPreview extends GLSurfaceView implements GLSurfaceView.Rende
     public void onSurfaceCreated(GL10 gl, EGLConfig config) {
         mCanvas = new CanvasGL();
         mTexture = new CameraTexture(mIncomingWidth,mIncomingHeight,false, GLES11Ext.GL_TEXTURE_EXTERNAL_OES);
-
+        mTexture.prepare(mCanvas.getIGLCanvas());
         mTextureId = mTexture.getId();
 
         // Create a SurfaceTexture, with an external texture, in this EGL context.  We don't

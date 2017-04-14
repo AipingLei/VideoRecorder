@@ -1,4 +1,4 @@
-package demo.recorder.encoder;
+package com.iflytek.codec.ffmpeg.encoder;
 
 /**
  * MP4软编码器,将图像数据编码为h264格式，将音频数据编码为aac格式 

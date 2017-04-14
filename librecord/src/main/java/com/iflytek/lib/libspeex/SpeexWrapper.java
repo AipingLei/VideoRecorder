@@ -1,4 +1,4 @@
-package demo.recorder.media.audio;
+package com.iflytek.lib.libspeex;
 
 
 /**

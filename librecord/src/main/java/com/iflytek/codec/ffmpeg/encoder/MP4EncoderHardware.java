@@ -1,5 +1,8 @@
-package demo.recorder.encoder;
+package com.iflytek.codec.ffmpeg.encoder;
 
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import android.annotation.TargetApi;
 import android.media.MediaCodec;
 import android.media.MediaCodec.BufferInfo;
@@ -8,15 +11,10 @@ import android.media.MediaCodecList;
 import android.media.MediaFormat;
 import android.media.MediaMuxer;
 import android.os.Build;
-
-import demo.recorder.encoder.MP4EncoderSoftware.AudioInitInputParams;
-import demo.recorder.encoder.MP4EncoderSoftware.EncoderOutputParams;
-import demo.recorder.encoder.MP4EncoderSoftware.InitOutputParams;
-import demo.recorder.encoder.MP4EncoderSoftware.VideoInitInputParams;
-
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.nio.ByteBuffer;
+import com.iflytek.codec.ffmpeg.encoder.MP4EncoderSoftware.AudioInitInputParams;
+import com.iflytek.codec.ffmpeg.encoder.MP4EncoderSoftware.EncoderOutputParams;
+import com.iflytek.codec.ffmpeg.encoder.MP4EncoderSoftware.InitOutputParams;
+import com.iflytek.codec.ffmpeg.encoder.MP4EncoderSoftware.VideoInitInputParams;
 
 /**
  * MP4硬编码器（需要SDK版本18及以上使用），将图像数据编码为h264格式，将音频数据编码为aac格式 

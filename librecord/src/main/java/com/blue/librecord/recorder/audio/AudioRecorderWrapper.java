@@ -1,4 +1,4 @@
-package demo.recorder.media.audio;
+package com.blue.librecord.recorder.audio;
 
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -118,29 +118,43 @@ public class AudioRecorderWrapper implements Runnable
 	public void run() 
 	{
 		try {
-
+			
 			byte[] buffer = new byte[minBufferSize];
-			while(true) {
+			while(true)
+			{
 				int result = mAudioRecord.read(buffer, 0, minBufferSize);
-				if(result == AudioRecord.ERROR_INVALID_OPERATION) {
-					if(mAudioRecord.getRecordingState() == AudioRecord.RECORDSTATE_STOPPED) {
-						break;
-					}
-				}else if(result == AudioRecord.ERROR_BAD_VALUE) {
-					if(mAudioRecord.getRecordingState() == AudioRecord.RECORDSTATE_STOPPED) {
-						break;
-					}
-				}else if(result == AudioRecord.ERROR) {
+				if(result == AudioRecord.ERROR_INVALID_OPERATION)
+				{
 					if(mAudioRecord.getRecordingState() == AudioRecord.RECORDSTATE_STOPPED)
 					{
 						break;
 					}
-				}else {
-					if(result<=0) {
-						if(mAudioRecord.getRecordingState() == AudioRecord.RECORDSTATE_STOPPED) {
+				} 
+				else if(result == AudioRecord.ERROR_BAD_VALUE)
+				{
+					if(mAudioRecord.getRecordingState() == AudioRecord.RECORDSTATE_STOPPED)
+					{
+						break;
+					}
+				} 
+				else if(result == AudioRecord.ERROR)
+				{
+					if(mAudioRecord.getRecordingState() == AudioRecord.RECORDSTATE_STOPPED)
+					{
+						break;
+					}
+				} 
+				else 
+				{
+					if(result<=0)
+					{
+						if(mAudioRecord.getRecordingState() == AudioRecord.RECORDSTATE_STOPPED)
+						{
 							break;
-						}
-					}else {
+						} 
+					} 
+					else
+					{
 						try {
 							fos.write(buffer, 0, result);
 						} catch (IOException e) {
@@ -149,7 +163,7 @@ public class AudioRecorderWrapper implements Runnable
 					}
 				}
 			}
-
+			
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

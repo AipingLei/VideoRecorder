@@ -1,10 +1,13 @@
-package demo.recorder.encoder;
-
+package com.iflytek.codec.ffmpeg.encoder;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+
+import com.iflytek.codec.ffmpeg.encoder.MP4EncoderSoftware.AudioInitInputParams;
+import com.iflytek.codec.ffmpeg.encoder.MP4EncoderSoftware.EncoderOutputParams;
+import com.iflytek.codec.ffmpeg.encoder.MP4EncoderSoftware.InitOutputParams;
 
 /**
  * m4a编码器，采用硬件编码，android sdk要求大于等于18
@@ -23,7 +26,7 @@ public class M4AEncoder
 	/**
 	 * 音频参数
 	 */
-	private MP4EncoderSoftware.AudioInitInputParams mAudioInitInputParams;
+	private AudioInitInputParams mAudioInitInputParams;
 	
 	/**
 	 * 
@@ -32,7 +35,7 @@ public class M4AEncoder
 	 * @param offset 文件处理的起始位置
 	 * @param outM4AFile 输出m4a文件
 	 */
-	public M4AEncoder(String pcmInputFile, MP4EncoderSoftware.AudioInitInputParams audioInitInputParams, int offset, String outM4AFile)
+	public M4AEncoder(String pcmInputFile, AudioInitInputParams audioInitInputParams, int offset, String outM4AFile)
 	{
 		this.mPcmInputFile = pcmInputFile;
 		this.mAudioInitInputParams = audioInitInputParams;
@@ -60,7 +63,7 @@ public class M4AEncoder
 	public boolean encode(M4AEncoderListener listener)
 	{
 		boolean result = false;
-		MP4EncoderSoftware.AudioInitInputParams aiip = mAudioInitInputParams;
+		AudioInitInputParams aiip = mAudioInitInputParams;
 		if(null != listener)
 		{
 			listener.onEncodeStart();
@@ -69,7 +72,7 @@ public class M4AEncoder
 		int percent = 0;
 		int lastNotifyPercent = 0;
 		MP4EncoderWrapper mp4EncoderWrapper = new MP4EncoderWrapper(true);
-		MP4EncoderSoftware.InitOutputParams initOutputParams = mp4EncoderWrapper.init(null, aiip, mOutM4AFile);
+		InitOutputParams initOutputParams = mp4EncoderWrapper.init(null, aiip, mOutM4AFile);
 		
 		if(initOutputParams.isSuccess)
 		{
@@ -90,7 +93,7 @@ public class M4AEncoder
 						result = true;
 						break;
 					}
-					MP4EncoderSoftware.EncoderOutputParams encoderResult = mp4EncoderWrapper.encodeFrame(2, inputBuffer, len);
+					EncoderOutputParams encoderResult = mp4EncoderWrapper.encodeFrame(2, inputBuffer, len);
 					
 					if(!encoderResult.isSuccess)
 					{

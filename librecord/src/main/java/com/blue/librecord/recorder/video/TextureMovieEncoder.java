@@ -14,13 +14,9 @@
  * limitations under the License.
  */
 
-package demo.recorder;
+package com.blue.librecord.recorder.video;
 
-import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
-import android.graphics.Path;
+import android.annotation.SuppressLint;
 import android.graphics.SurfaceTexture;
 import android.opengl.EGLContext;
 import android.opengl.GLES20;
@@ -29,6 +25,9 @@ import android.os.Looper;
 import android.os.Message;
 import android.util.Log;
 
+import com.blue.librecord.recorder.gles.EglCore;
+import com.blue.librecord.recorder.gles.GlUtil;
+import com.blue.librecord.recorder.gles.WindowSurface;
 
 import java.io.File;
 import java.io.IOException;
@@ -36,11 +35,9 @@ import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
 
-import demo.recorder.gles.EglCore;
-import demo.recorder.gles.FullFrameRect;
-import demo.recorder.gles.Texture2dProgram;
-import demo.recorder.gles.WindowSurface;
-import demo.recorder.util.BitmapHelper;
+import jp.co.cyberagent.android.gpuimage.Rotation;
+import jp.co.cyberagent.android.gpuimage.filter.FilterWrapper;
+import jp.co.cyberagent.android.gpuimage.filter.GPUImageFilter;
 
 /**
  * Encode a movie from frames rendered from an external texture image.
@@ -62,13 +59,14 @@ import demo.recorder.util.BitmapHelper;
  * <li>call TextureMovieEncoder#startRecording() with the config
  * <li>call TextureMovieEncoder#setTextureId() with the texture object that receives frames
  * <li>for each frame, after latching it with SurfaceTexture#updateTexImage(),
- *     call TextureMovieEncoder#frameAvailable().
+ * call TextureMovieEncoder#frameAvailable().
  * </ul>
- *
+ * <p>
  * TODO: tweak the API (esp. textureId) so it's less awkward for simple use cases.
  */
+@SuppressLint("NewApi")
 public class TextureMovieEncoder implements Runnable {
-    private static final String TAG = MainActivity.TAG;
+    private static final String TAG = TextureMovieEncoder.class.getSimpleName();
     private static final boolean VERBOSE = false;
 
     private static final int MSG_START_RECORDING = 0;
@@ -77,11 +75,48 @@ public class TextureMovieEncoder implements Runnable {
     private static final int MSG_SET_TEXTURE_ID = 3;
     private static final int MSG_UPDATE_SHARED_CONTEXT = 4;
     private static final int MSG_QUIT = 5;
+    private static final int MSG_SET_FILTER = 6;
 
     // ----- accessed exclusively by encoder thread -----
     private WindowSurface mInputWindowSurface;
     private EglCore mEglCore;
-    private FullFrameRect mFullScreen;
+    //    private FullFrameRect mFullScreen;
+    private long mStartRecordTimeNanos = 0; // 开始录制的时间
+    private long mRecordTotalTimeNanos = 0; // 已录制的总时间
+    private FilterWrapper mFilterWrapper = createFilter();
+
+    private FilterWrapper createFilter() {
+
+        GPUImageFilter filter = this.filter;
+        if (null == filter) {
+            filter = new GPUImageFilter();
+        }
+        FilterWrapper f = new FilterWrapper(filter);
+        f.initFilter();
+
+        if (null != mConfig) {
+            // f.onOutpuSizeChanged(mConfig.mPreviewWidth,mConfig.mPreviewHeight);
+            f.onOutpuSizeChanged(mConfig.mWidth, mConfig.mHeight);
+            f.onSurfaceSizeChanged(mConfig.mWidth, mConfig.mHeight);
+
+            switch (mConfig.mCameraOrientation) {
+                case 90:
+                    f.setRotation(Rotation.ROTATION_90, mConfig.mFlipHorizontal, mConfig.mFlipVertical);
+                    break;
+                case 180:
+                    f.setRotation(Rotation.ROTATION_180, mConfig.mFlipHorizontal, mConfig.mFlipVertical);
+                    break;
+                case 270:
+                    f.setRotation(Rotation.ROTATION_270, mConfig.mFlipHorizontal, mConfig.mFlipVertical);
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        return f;
+    }
+
     private int mTextureId;
     private int mFrameNum;
     private VideoEncoderCore mVideoEncoder;
@@ -92,13 +127,11 @@ public class TextureMovieEncoder implements Runnable {
     private Object mReadyFence = new Object();      // guards ready/running
     private boolean mReady;
     private boolean mRunning;
-    private Bitmap mBitmap;
-    private long mStartRecordTimeNanos = 0; // 开始录制的时间
-    private long mRecordTotalTimeNanos = 0; // 已录制的总时间
+    private long mTimeStamp;
     private List<Long> mPauseTimeStamp = new ArrayList<Long>();
     private List<Long> mResumeTimeStamp = new ArrayList<Long>();
     private boolean mPause;
-    private long mTimeStamp;
+
 
     /**
      * Encoder configuration.
@@ -108,33 +141,32 @@ public class TextureMovieEncoder implements Runnable {
      * under us).
      * <p>
      * TODO: make frame rate and iframe interval configurable?  Maybe use builder pattern
-     *       with reasonable defaults for those and bit rate.
+     * with reasonable defaults for those and bit rate.
      */
     public static class EncoderConfig {
         final File mOutputFile;
         final int mWidth;
         final int mHeight;
-        final int mBitRate;
-        final EGLContext mEglContext;
 
         final int mPreviewWidth;
         final int mPreviewHeight;
 
 
-/*        public EncoderConfig(File outputFile, int width, int height, int bitRate,
-                             EGLContext sharedEglContext) {
-            mOutputFile = outputFile;
-            mWidth = width;
-            mHeight = height;
-            mBitRate = bitRate;
-            mEglContext = sharedEglContext;
-        }*/
+        final int mCameraOrientation;// 摄像头旋转度数
+        final boolean mFlipHorizontal;
+        final boolean mFlipVertical;
 
-        public EncoderConfig(File outputFile, int width, int height, int bitRate, int previewWidth, int previewHeight,
+        final int mBitRate;
+        final EGLContext mEglContext;
+
+        public EncoderConfig(File outputFile, int width, int height, int bitRate, int previewWidth, int previewHeight, int cameraOrientation, boolean flipHorizontal, boolean flipVertical,
                              EGLContext sharedEglContext) {
             mOutputFile = outputFile;
             mWidth = width;
             mHeight = height;
+            this.mCameraOrientation = cameraOrientation;
+            this.mFlipHorizontal = flipHorizontal;
+            this.mFlipVertical = flipVertical;
 
             mPreviewWidth = previewWidth;
             mPreviewHeight = previewHeight;
@@ -171,13 +203,21 @@ public class TextureMovieEncoder implements Runnable {
                 try {
                     mReadyFence.wait();
                 } catch (InterruptedException ie) {
-                    ie.printStackTrace();
                     // ignore
                 }
             }
         }
 
         mHandler.sendMessage(mHandler.obtainMessage(MSG_START_RECORDING, config));
+    }
+
+    /**
+     * 编码停下后回调
+     *
+     * @author sulei
+     */
+    public interface OnStopOverListener {
+        void onStopOver();
     }
 
     /**
@@ -190,21 +230,16 @@ public class TextureMovieEncoder implements Runnable {
      * has completed).
      */
     public void stopRecording(OnStopOverListener onStopOverListener) {
-       /* mHandler.sendMessage(mHandler.obtainMessage(MSG_STOP_RECORDING));
-        mHandler.sendMessage(mHandler.obtainMessage(MSG_QUIT));*/
-        // We don't know when these will actually finish (or even start).  We don't want to
-        // delay the UI thread though, so we return immediately.
-
         mPauseTimeStamp.clear();
         mResumeTimeStamp.clear();
         mHandler.sendMessage(mHandler.obtainMessage(MSG_STOP_RECORDING));
         Message m = mHandler.obtainMessage(MSG_QUIT);
         m.obj = onStopOverListener;
         mHandler.sendMessage(m);
-        mStartRecordTimeNanos = 0; // 重置开始录制时间
-        mRecordTotalTimeNanos = 0;
         // We don't know when these will actually finish (or even start).  We don't want to
         // delay the UI thread though, so we return immediately.
+        mStartRecordTimeNanos = 0; // 重置开始录制时间
+        mRecordTotalTimeNanos = 0;
     }
 
     /**
@@ -217,11 +252,46 @@ public class TextureMovieEncoder implements Runnable {
     }
 
     /**
+     * 获取已录制的时间,单位：纳秒
+     *
+     * @return
+     */
+    public long getRecordedTimeNanos() {
+        return this.mRecordTotalTimeNanos;
+    }
+
+    private GPUImageFilter filter;
+
+    /**
+     * 设置滤镜
+     *
+     * @param filter
+     */
+    public void setFilter(GPUImageFilter filter) {
+        if (null != filter) {
+            this.filter = filter.clone();
+        }
+
+        if (null != mHandler) {
+            mHandler.sendMessage(mHandler.obtainMessage(MSG_SET_FILTER, this.filter));
+        }
+    }
+
+    /**
      * Tells the video recorder to refresh its EGL surface.  (Call from non-encoder thread.)
      */
     public void updateSharedContext(EGLContext sharedContext) {
         mHandler.sendMessage(mHandler.obtainMessage(MSG_UPDATE_SHARED_CONTEXT, sharedContext));
     }
+
+    public void pause() {
+        if (!mPause) {
+            mPauseTimeStamp.add(mTimeStamp);
+            mPause = true;
+        }
+    }
+
+    private float[] transform;
 
     /**
      * Tells the video recorder that a new frame is available.  (Call from non-encoder thread.)
@@ -243,9 +313,27 @@ public class TextureMovieEncoder implements Runnable {
             }
         }
 
-        float[] transform = new float[16];      // TODO - avoid alloc every frame
+        if (null == transform) {
+            transform = new float[16];
+        }
+
         st.getTransformMatrix(transform);
+        //TODO Chris timestamp is here!
         long timestamp = st.getTimestamp();
+        if (timestamp == 0) {
+            return;
+        }
+
+        if (mPause && !mPauseTimeStamp.isEmpty()) {
+            mPause = false;
+            mResumeTimeStamp.add(timestamp);
+            //hack: 50 is to be rethink
+            timestamp = mPauseTimeStamp.get(mPauseTimeStamp.size() - 1) + 50;
+        } else if (!mPause && !mResumeTimeStamp.isEmpty()) {
+            timestamp = mPauseTimeStamp.get(mPauseTimeStamp.size() - 1) +
+                    timestamp - mResumeTimeStamp.get(mResumeTimeStamp.size() - 1);
+        }
+        ;
         if (timestamp == 0) {
             // Seeing this after device is toggled off/on with power button.  The
             // first frame back has a zero timestamp.
@@ -255,6 +343,7 @@ public class TextureMovieEncoder implements Runnable {
             Log.w(TAG, "HEY: got SurfaceTexture with timestamp of zero");
             return;
         }
+
         mTimeStamp = timestamp;
         mHandler.sendMessage(mHandler.obtainMessage(MSG_FRAME_AVAILABLE,
                 (int) (timestamp >> 32), (int) timestamp, transform));
@@ -278,6 +367,7 @@ public class TextureMovieEncoder implements Runnable {
     /**
      * Encoder thread entry point.  Establishes Looper/Handler and waits for messages.
      * <p>
+     *
      * @see Thread#run()
      */
     @Override
@@ -290,6 +380,7 @@ public class TextureMovieEncoder implements Runnable {
             mReadyFence.notify();
         }
         Looper.loop();
+
         Log.d(TAG, "Encoder thread exiting");
         synchronized (mReadyFence) {
             mReady = mRunning = false;
@@ -319,7 +410,6 @@ public class TextureMovieEncoder implements Runnable {
                 return;
             }
 
-
             switch (what) {
                 case MSG_START_RECORDING:
                     encoder.handleStartRecording((EncoderConfig) obj);
@@ -336,15 +426,19 @@ public class TextureMovieEncoder implements Runnable {
                     encoder.handleSetTexture(inputMessage.arg1);
                     break;
                 case MSG_UPDATE_SHARED_CONTEXT:
-                    encoder.handleUpdateSharedContext((EGLContext) inputMessage.obj);
+                    encoder.handleUpdateSharedContext((EGLContext) obj);
                     break;
                 case MSG_QUIT:
                     Looper.myLooper().quit();
+
                     // 通知停止编码结束
                     if (null != obj) {
                         ((OnStopOverListener) obj).onStopOver();
                     }
 
+                    break;
+                case MSG_SET_FILTER:
+                    encoder.handleFilter((GPUImageFilter) obj);
                     break;
                 default:
                     throw new RuntimeException("Unhandled msg what=" + what);
@@ -358,9 +452,14 @@ public class TextureMovieEncoder implements Runnable {
     private void handleStartRecording(EncoderConfig config) {
         Log.d(TAG, "handleStartRecording " + config);
         mFrameNum = 0;
-        prepareEncoder(config.mEglContext, config.mWidth, config.mHeight, config.mBitRate,
-                config.mOutputFile);
+//        prepareEncoder(config.mEglContext, config.mWidth, config.mHeight, config.mBitRate,config.mPreviewWidth, config.mPreviewHeight,config.cameraOrientation,
+//                config.mOutputFile);
+        prepareEncoder(config);
+
     }
+
+    // 调试功能，是否开启绘制测试矩形
+    private boolean isShowTestBox = false;
 
     /**
      * Handles notification of an available frame.
@@ -368,37 +467,32 @@ public class TextureMovieEncoder implements Runnable {
      * The texture is rendered onto the encoder's input surface, along with a moving
      * box (just because we can).
      * <p>
-     * @param transform The texture transform, from SurfaceTexture.
+     *
+     * @param transform      The texture transform, from SurfaceTexture.
      * @param timestampNanos The frame's timestamp, from SurfaceTexture.
      */
     private void handleFrameAvailable(float[] transform, long timestampNanos) {
         if (VERBOSE) Log.d(TAG, "handleFrameAvailable tr=" + transform);
         mVideoEncoder.drainEncoder(false);
-        mFullScreen.drawFrame(mTextureId, transform);
-        drawBox(mFrameNum++);
-        //drawBitmap();
+//        mFullScreen.drawFrame(mTextureId, transform);
+
+//        GLES20.glUseProgram(mProgramHandle); // 小米手机上不这么设置一下,录制出来的图像卡爆了
+//        GLES20.glUseProgram(0);
+        mFilterWrapper.drawFrame(mTextureId, mPreviewWidth, mPreviewHeight);
+
+        if (isShowTestBox) {
+            drawBox(mFrameNum++);
+        }
+
         mInputWindowSurface.setPresentationTime(timestampNanos);
         mInputWindowSurface.swapBuffers();
-    }
 
-    int j = 0;
-
-    private void drawBitmap() {
-        Canvas canvas = new Canvas(mBitmap);
-        canvas.drawColor(Color.TRANSPARENT);
-        Paint paint = new Paint();
-        paint.setAntiAlias(true);                       //设置画笔为无锯齿
-        paint.setColor(Color.BLACK);                    //设置画笔颜色
-        paint.setStrokeWidth((float) 3.0);              //线宽
-        paint.setStyle(Paint.Style.STROKE);
-        Path path = new Path();                     //Path对象
-        if (j == 0){
-            path.moveTo(50, 100);
-        }else if(j<5){
-            path.lineTo((j+1)*50, 300);                           //连线到下一点
+        if (mStartRecordTimeNanos == 0) {
+            mStartRecordTimeNanos = timestampNanos;
         }
-        canvas.drawPath(path, paint);                   //绘制任意多边形
+        mRecordTotalTimeNanos = timestampNanos - mStartRecordTimeNanos;
     }
+
 
     /**
      * Handles a request to stop encoding.
@@ -413,7 +507,6 @@ public class TextureMovieEncoder implements Runnable {
      * Sets the texture name that SurfaceTexture will use when frames are received.
      */
     private void handleSetTexture(int id) {
-        //Log.d(TAG, "handleSetTexture " + id);
         mTextureId = id;
     }
 
@@ -429,7 +522,9 @@ public class TextureMovieEncoder implements Runnable {
 
         // Release the EGLSurface and EGLContext.
         mInputWindowSurface.releaseEglSurface();
-        mFullScreen.release(false);
+//        mFullScreen.release(false);
+        mFilterWrapper.destory();
+
         mEglCore.release();
 
         // Create a new EGLContext and recreate the window surface.
@@ -438,26 +533,88 @@ public class TextureMovieEncoder implements Runnable {
         mInputWindowSurface.makeCurrent();
 
         // Create new programs and such for the new context.
-        mFullScreen = new FullFrameRect(
-                new Texture2dProgram(Texture2dProgram.ProgramType.TEXTURE_EXT));
+//        mFullScreen = new FullFrameRect(
+//                new Texture2dProgram(Texture2dProgram.ProgramType.TEXTURE_EXT));
+
+        mFilterWrapper = createFilter();
+
+//        Texture2dProgram.ProgramType programType = Texture2dProgram.ProgramType.TEXTURE_EXT_BW;
+//        float[] kernel = null;
+//        float colorAdj = 0.0f;
+//        mFullScreen.changeProgram(new Texture2dProgram(programType));
+//
+//        // Update the filter kernel (if any).
+//        if (kernel != null) {
+//            mFullScreen.getProgram().setKernel(kernel, colorAdj);
+//        }
     }
 
-    private void prepareEncoder(EGLContext sharedContext, int width, int height, int bitRate,
-                                File outputFile) {
+    /**
+     * 处理滤镜
+     *
+     * @param filter
+     */
+    private void handleFilter(GPUImageFilter filter) {
+        if (null != mFilterWrapper) {
+            mFilterWrapper.setFilter(filter);
+            if (null != mConfig) {
+                mFilterWrapper.onOutpuSizeChanged(mConfig.mWidth, mConfig.mHeight);
+                mFilterWrapper.onSurfaceSizeChanged(mConfig.mWidth, mConfig.mHeight);
+            }
+
+        }
+    }
+
+    private int mPreviewWidth;
+    private int mPreviewHeight;
+
+
+    // Simple vertex shader, used for all programs.
+    private static final String VERTEX_SHADER =
+            "uniform mat4 uMVPMatrix;\n" +
+                    "uniform mat4 uTexMatrix;\n" +
+                    "attribute vec4 aPosition;\n" +
+                    "attribute vec4 aTextureCoord;\n" +
+                    "varying vec2 vTextureCoord;\n" +
+                    "void main() {\n" +
+                    "    gl_Position = uMVPMatrix * aPosition;\n" +
+                    "    vTextureCoord = (uTexMatrix * aTextureCoord).xy;\n" +
+                    "}\n";
+    private static final String FRAGMENT_SHADER_EXT =
+            "#extension GL_OES_EGL_image_external : require\n" +
+                    "precision mediump float;\n" +
+                    "varying vec2 vTextureCoord;\n" +
+                    "uniform samplerExternalOES sTexture;\n" +
+                    "void main() {\n" +
+                    "    gl_FragColor = texture2D(sTexture, vTextureCoord);\n" +
+                    "}\n";
+    private int mProgramHandle;
+
+    private EncoderConfig mConfig;
+
+    private void prepareEncoder(EncoderConfig config) {
+        mConfig = config;
+        mPreviewWidth = config.mPreviewWidth;
+        mPreviewHeight = config.mPreviewHeight;
+
+
         try {
-            mVideoEncoder = new VideoEncoderCore(width, height, bitRate, outputFile);
+            mVideoEncoder = new VideoEncoderCore(config.mWidth, config.mHeight, config.mBitRate, config.mOutputFile);
         } catch (IOException ioe) {
             throw new RuntimeException(ioe);
         }
-        mEglCore = new EglCore(sharedContext, EglCore.FLAG_RECORDABLE);
+        mEglCore = new EglCore(config.mEglContext, EglCore.FLAG_RECORDABLE);
         mInputWindowSurface = new WindowSurface(mEglCore, mVideoEncoder.getInputSurface(), true);
         mInputWindowSurface.makeCurrent();
 
-        mFullScreen = new FullFrameRect(
-                new Texture2dProgram(Texture2dProgram.ProgramType.TEXTURE_EXT));
-        mBitmap = BitmapHelper.createBitmap(width,height);
+//        mFullScreen = new FullFrameRect(
+//                new Texture2dProgram(Texture2dProgram.ProgramType.TEXTURE_EXT));
 
+        mProgramHandle = GlUtil.createProgram(VERTEX_SHADER, FRAGMENT_SHADER_EXT);
+
+        mFilterWrapper = createFilter();
     }
+
 
     private void releaseEncoder() {
         mVideoEncoder.release();
@@ -465,21 +622,23 @@ public class TextureMovieEncoder implements Runnable {
             mInputWindowSurface.release();
             mInputWindowSurface = null;
         }
-        if (mFullScreen != null) {
-            mFullScreen.release(false);
-            mFullScreen = null;
+//        if (mFullScreen != null) {
+//            mFullScreen.release(false);
+//            mFullScreen = null;
+//        }
+
+
+        if (null != mFilterWrapper) {
+            mFilterWrapper.destory();
+            mFilterWrapper = null;
         }
+
         if (mEglCore != null) {
             mEglCore.release();
             mEglCore = null;
         }
-        if (mBitmap != null){
-            mBitmap.recycle();
-            mBitmap = null;
-        }
-
     }
-    int i = 0;
+
     /**
      * Draws a box, with position offset.
      */
@@ -487,41 +646,9 @@ public class TextureMovieEncoder implements Runnable {
         final int width = mInputWindowSurface.getWidth();
         int xpos = (posn * 4) % (width - 50);
         GLES20.glEnable(GLES20.GL_SCISSOR_TEST);
-        GLES20.glEnable(GLES20.GL_SCISSOR_TEST);
-        for (int j=0;j<i;j++){
-            GLES20.glScissor(j,j, 2, 2);
-            GLES20.glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
-            GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
-        }
-        i+=5;
-
-
-      /*  GLES20.glScissor(xpos, 0, 100, 100);
+        GLES20.glScissor(xpos, 0, 100, 100);
         GLES20.glClearColor(1.0f, 0.0f, 1.0f, 1.0f);
-        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);*/
+        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
         GLES20.glDisable(GLES20.GL_SCISSOR_TEST);
-    }
-    /**
-     * 编码停停止后回调
-     *
-     * @author leiap
-     */
-    public interface OnStopOverListener {
-        void onStopOver();
-    }
-    /**
-     * 获取已录制的时间,单位：纳秒
-     *
-     * @return
-     */
-    public long getRecordedTimeNanos() {
-        return this.mRecordTotalTimeNanos;
-    }
-
-    public void pause() {
-        if (!mPause) {
-            mPauseTimeStamp.add(mTimeStamp);
-            mPause = true;
-        }
     }
 }

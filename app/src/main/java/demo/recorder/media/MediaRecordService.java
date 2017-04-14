@@ -8,15 +8,16 @@ import android.os.Build;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.blue.librecord.muxer.FFmpegMuxer;
+import com.blue.librecord.recorder.audio.AudioRecorderWrapper;
+import com.blue.librecord.recorder.audio.PCMDenoiser;
+import com.iflytek.codec.ffmpeg.encoder.M4AEncoder;
+import com.iflytek.codec.ffmpeg.encoder.MP4EncoderSoftware;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-import demo.recorder.encoder.M4AEncoder;
-import demo.recorder.encoder.MP4EncoderSoftware;
-import demo.recorder.media.audio.AudioRecorderWrapper;
-import demo.recorder.media.audio.PCMDenoiser;
-import demo.recorder.muxer.FFmpegMuxer;
 import demo.recorder.ui.CameraPreview;
 
 /** 

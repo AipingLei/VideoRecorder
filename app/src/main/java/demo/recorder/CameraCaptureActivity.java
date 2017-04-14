@@ -190,13 +190,14 @@ public class CameraCaptureActivity extends Activity {
                     if (sRecord){
                         mediaRecordService.startRecord();
                         mRecordButton.setBackgroundResource(R.drawable.squarecamera__camera_snap_selected);
-                        Toast.makeText(CameraCaptureActivity.this,"start recording!",Toast.LENGTH_LONG);
+                        Toast.makeText(CameraCaptureActivity.this,"start recording!",Toast.LENGTH_LONG).show();
                     }else {
                         // 暂停
                         mRecordButton.setBackgroundResource(R.drawable.squarecamera__camera_snap_unselected);
                         mediaRecordService.stopRecord();
-                        Toast.makeText(CameraCaptureActivity.this,"stop recording!",Toast.LENGTH_LONG);
+                        Toast.makeText(CameraCaptureActivity.this,"stop recording!",Toast.LENGTH_LONG).show();
                     }
+                    isRecord = sRecord;
                     break;
             }
             return true;

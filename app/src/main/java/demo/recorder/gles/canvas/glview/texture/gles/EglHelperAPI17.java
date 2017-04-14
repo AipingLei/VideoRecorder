@@ -7,7 +7,6 @@ import android.opengl.EGLDisplay;
 import android.opengl.EGLExt;
 import android.opengl.EGLSurface;
 import android.os.Build;
-import android.support.annotation.RequiresApi;
 import android.util.Log;
 
 import demo.recorder.gles.canvas.Loggers;
@@ -17,7 +16,6 @@ import demo.recorder.gles.canvas.Loggers;
  * Created by Chilling on 2016/12/29.
  */
 
-@RequiresApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
 public class EglHelperAPI17 implements IEglHelper {
 
     private GLThread.EGLConfigChooser eglConfigChooser;

@@ -1,7 +1,11 @@
-package demo.recorder.encoder;
+package com.iflytek.codec.ffmpeg.encoder;
 
 import android.text.TextUtils;
 
+import com.iflytek.codec.ffmpeg.encoder.MP4EncoderSoftware.AudioInitInputParams;
+import com.iflytek.codec.ffmpeg.encoder.MP4EncoderSoftware.EncoderOutputParams;
+import com.iflytek.codec.ffmpeg.encoder.MP4EncoderSoftware.InitOutputParams;
+import com.iflytek.codec.ffmpeg.encoder.MP4EncoderSoftware.VideoInitInputParams;
 
 /**
  * MP4编码器封装类 
@@ -29,12 +33,12 @@ public class MP4EncoderWrapper
 	 * @param audioInitParams
 	 * @param outFileAbsPath
 	 */
-	public MP4EncoderSoftware.InitOutputParams init(MP4EncoderSoftware.VideoInitInputParams videoInitParams, MP4EncoderSoftware.AudioInitInputParams audioInitParams, String outFileAbsPath)
+	public InitOutputParams init(VideoInitInputParams videoInitParams, AudioInitInputParams audioInitParams, String outFileAbsPath)
 	{
 		
 		if(null == videoInitParams && null == audioInitParams || TextUtils.isEmpty(outFileAbsPath))
 		{
-			MP4EncoderSoftware.InitOutputParams initOutputParams = new MP4EncoderSoftware.InitOutputParams();
+			InitOutputParams initOutputParams = new InitOutputParams();
 			initOutputParams.isSuccess = false;
 			return initOutputParams;
 		}
@@ -57,7 +61,7 @@ public class MP4EncoderWrapper
 	 * @param length 数据长度
 	 * @return 
 	 */
-	public MP4EncoderSoftware.EncoderOutputParams encodeFrame(int frameType, byte[] data, int length)
+	public EncoderOutputParams encodeFrame(int frameType, byte[] data, int length)
 	{
 		if(isUseEncoderHW)
 		{

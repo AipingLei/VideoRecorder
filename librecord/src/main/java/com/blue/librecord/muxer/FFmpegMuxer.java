@@ -1,6 +1,6 @@
-package demo.recorder.muxer;
+package com.blue.librecord.muxer;
 
-import demo.recorder.encoder.FFmpegCommondHelper;
+import com.iflytek.codec.ffmpeg.FFmpegCommondHelper;
 
 import java.io.File;
 

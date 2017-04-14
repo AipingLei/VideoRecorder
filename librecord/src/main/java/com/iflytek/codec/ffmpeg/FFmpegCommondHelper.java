@@ -1,4 +1,4 @@
-package demo.recorder.encoder;
+package com.iflytek.codec.ffmpeg;
 
 import android.util.Log;
 
