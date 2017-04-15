@@ -278,7 +278,6 @@ public class GLES20Canvas implements IGLCanvas {
 
     private static int assembleProgram(int vertexShader, int fragmentShader, ShaderParameter[] params, int[] linkStatus) {
         int program = GLES20.glCreateProgram();
-        checkError();
         if (program == 0) {
             throw new RuntimeException("Cannot create GL program: " + GLES20.glGetError());
         }

@@ -1,26 +1,26 @@
 package demo.recorder.ui;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.PixelFormat;
 import android.graphics.SurfaceTexture;
 import android.opengl.GLES11Ext;
-import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.os.Build;
+import android.os.Handler;
 import android.util.AttributeSet;
 import android.util.Log;
 
 
-import com.blue.librecord.recorder.gles.GlUtil;
-
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
-import demo.recorder.gles.FullFrameRect;
-import demo.recorder.gles.Texture2dProgram;
 import demo.recorder.gles.canvas.CanvasGL;
+import demo.recorder.gles.canvas.glcanvas.CameraTexture;
 import demo.recorder.media.TexureObserver;
 
 /**
@@ -32,9 +32,9 @@ import demo.recorder.media.TexureObserver;
  */
 public  class CameraPreview extends GLSurfaceView implements GLSurfaceView.Renderer{
     private static final String TAG = "CameraPreview";
-   // protected CanvasGL mCanvas;
+    protected CanvasGL mCanvas;
 
-    //protected CameraTexture mTexture;
+    protected CameraTexture mTexture;
 
     private OnSizeChangeCallback onSizeChangeCallback;
 
@@ -43,9 +43,10 @@ public  class CameraPreview extends GLSurfaceView implements GLSurfaceView.Rende
     private int mTextureId;
     private SurfaceTexture mSurfaceTexture;
     private TexureObserver mObServer;
+    private Bitmap bitmap;
+    private Canvas normalCanvas;
     Paint mPaint = new Paint();
-    private FullFrameRect mFullScreen;
-    private float[] mSTMatrix = new float[16];;
+
 
 
     public CameraPreview(Context context, AttributeSet attrs) {
@@ -67,6 +68,7 @@ public  class CameraPreview extends GLSurfaceView implements GLSurfaceView.Rende
         getHolder().setFormat(PixelFormat.TRANSLUCENT);
         setRenderer(this);
         setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
+        bitmap = Bitmap.createBitmap(480,480, Bitmap.Config.ARGB_8888);
         mPaint = new Paint();
         mPaint.setColor(Color.BLUE);
         mPaint.setAntiAlias(true);
@@ -76,20 +78,14 @@ public  class CameraPreview extends GLSurfaceView implements GLSurfaceView.Rende
 
     @Override
     public void onSurfaceCreated(GL10 gl, EGLConfig config) {
-        //mCanvas = new CanvasGL();
-        //mTexture = new CameraTexture(mIncomingWidth,mIncomingHeight,false, GLES11Ext.GL_TEXTURE_EXTERNAL_OES);
-        //mTexture.prepare(mCanvas.getIGLCanvas());
-        //mTextureId = mTexture.getId();
+        mCanvas = new CanvasGL();
+        mTexture = new CameraTexture(mIncomingWidth,mIncomingHeight,false, GLES11Ext.GL_TEXTURE_EXTERNAL_OES);
+        mTexture.prepare(mCanvas.getIGLCanvas());
+        mTextureId = mTexture.getId();
 
         // Create a SurfaceTexture, with an external texture, in this EGL context.  We don't
         // have a Looper in this thread -- GLSurfaceView doesn't create one -- so the frame
         // available messages will arrive on the main thread.
-
-        GlUtil.checkGlError("glTexParameter");
-        mFullScreen = new FullFrameRect(
-                new Texture2dProgram(Texture2dProgram.ProgramType.TEXTURE_EXT));
-        mTextureId = mFullScreen.createTextureObject();
-
         mSurfaceTexture = new SurfaceTexture(mTextureId);
         mObServer.onSurfaceCreated(mSurfaceTexture);
         // Tell the UI thread to enable the camera preview.
@@ -97,7 +93,7 @@ public  class CameraPreview extends GLSurfaceView implements GLSurfaceView.Rende
 
     @Override
     public void onSurfaceChanged(GL10 gl, int width, int height) {
-        //mCanvas.setSize(width, height);
+        mCanvas.setSize(width, height);
         mObServer.onSurfaceChanged(gl,width,height);
     }
 
@@ -120,15 +116,9 @@ public  class CameraPreview extends GLSurfaceView implements GLSurfaceView.Rende
         // Draw the video frame.
         mSurfaceTexture.getTransformMatrix(mSTMatrix);
         mFullScreen.drawFrame(mTextureId, mSTMatrix);*/
-        //mCanvas.clearBuffer();
-        //onGLCanvasDraw(mCanvas);
-        // Draw the video frame.
-        mSurfaceTexture.getTransformMatrix(mSTMatrix);
-        mFullScreen.drawFrame(mTextureId, mSTMatrix);
-        if (mIncomingSizeUpdated) {
-            mFullScreen.getProgram().setTexSize(mIncomingWidth, mIncomingHeight);
-            mIncomingSizeUpdated = false;
-        }
+        this.gl = gl;
+        mCanvas.clearBuffer();
+        onGLCanvasDraw(mCanvas);
         mObServer.onDrawFrame(mSurfaceTexture,mTextureId);
     }
 
@@ -139,7 +129,7 @@ public  class CameraPreview extends GLSurfaceView implements GLSurfaceView.Rende
     private void onGLCanvasDraw(CanvasGL aCanvas) {
         mFramecount++;
         //normalCanvas = new Canvas(bitmap);
-       // aCanvas.drawSurfaceTexture(mTexture,null,0,0,mIncomingWidth,mIncomingHeight);
+        aCanvas.drawSurfaceTexture(mTexture,mSurfaceTexture,0,0,mIncomingWidth,mIncomingHeight);
        /* boolean invalidata = false;
         if (mFramecount % 10 ==0){
             Path path = new Path();                     //Path对象
@@ -184,10 +174,6 @@ public  class CameraPreview extends GLSurfaceView implements GLSurfaceView.Rende
             Log.d(TAG, "renderer pausing -- releasing SurfaceTexture");
             mSurfaceTexture.release();
             mSurfaceTexture = null;
-        }
-        if (mFullScreen != null) {
-            mFullScreen.release(false);     // assume the GLSurfaceView EGL context is about
-            mFullScreen = null;             //  to be destroyed
         }
         mIncomingWidth = mIncomingHeight = -1;
     }

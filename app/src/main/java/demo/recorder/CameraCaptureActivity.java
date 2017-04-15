@@ -133,7 +133,7 @@ import demo.recorder.ui.CameraPreview;
  * is managed as a static property of the Activity.
  */
 public class CameraCaptureActivity extends Activity {
-    private static final String TAG = MainActivity.TAG;
+    public static final String TAG = "CameraCaptureActivity";
     private static final boolean VERBOSE = false;
     MediaRecordService mediaRecordService;
     ImageView mRecordButton;

@@ -39,6 +39,7 @@ import java.util.WeakHashMap;
 
 import demo.recorder.gles.canvas.glcanvas.BasicTexture;
 import demo.recorder.gles.canvas.glcanvas.BitmapTexture;
+import demo.recorder.gles.canvas.glcanvas.CameraTexture;
 import demo.recorder.gles.canvas.glcanvas.IGLCanvas;
 import demo.recorder.gles.canvas.glcanvas.GLES20Canvas;
 import demo.recorder.gles.canvas.glcanvas.GLPaint;
@@ -99,6 +100,15 @@ public class CanvasGL implements ICanvasGL {
         GLES20.glBindTexture(texture.getTarget(), texture.getId());
         GLES20Canvas.checkError();
         return texture;
+    }
+
+    public int bindCameraTexure(int whichTexture, CameraTexture texture) {
+        texture.prepare(IGLCanvas);
+        GLES20.glActiveTexture(whichTexture);
+        GLES20Canvas.checkError();
+        GLES20.glBindTexture(texture.getTarget(), texture.getId());
+        GLES20Canvas.checkError();
+        return  texture.getId();
     }
 
     @Override

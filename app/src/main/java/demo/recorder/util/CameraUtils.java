@@ -30,13 +30,14 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 
-import demo.recorder.MainActivity;
+import demo.recorder.CameraCaptureActivity;
+
 
 /**
  * Camera-related utility functions.
  */
 public class CameraUtils {
-    private static final String TAG = MainActivity.TAG;
+    private static final String TAG = CameraCaptureActivity.TAG;
 
     /**
      * Attempts to find a preview size that matches the provided width and height (which

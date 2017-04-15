@@ -21,6 +21,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.SurfaceTexture;
 import android.opengl.EGLContext;
+import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
 import android.os.Handler;
 import android.os.Looper;
@@ -42,6 +43,7 @@ import demo.recorder.gles.Texture2dProgram;
 import demo.recorder.gles.WindowSurface;
 import demo.recorder.gles.canvas.CanvasGL;
 import demo.recorder.gles.canvas.glcanvas.BitmapTexture;
+import demo.recorder.gles.canvas.glcanvas.CameraTexture;
 
 /**
  * Encode a movie from frames rendered from an external texture image.
@@ -69,7 +71,7 @@ import demo.recorder.gles.canvas.glcanvas.BitmapTexture;
  * TODO: tweak the API (esp. textureId) so it's less awkward for simple use cases.
  */
 public class TextureMovieEncoder implements Runnable {
-    private static final String TAG = MainActivity.TAG;
+    private static final String TAG = "TextureMovieEncoder";
     private static final boolean VERBOSE = false;
 
     private static final int MSG_START_RECORDING = 0;
@@ -366,7 +368,8 @@ public class TextureMovieEncoder implements Runnable {
     private void handleFrameAvailable(float[] transform, long timestampNanos) {
         if (VERBOSE) Log.d(TAG, "handleFrameAvailable tr=" + transform);
         mVideoEncoder.drainEncoder(false);
-        //mGLCanvas.drawSurfaceTexture(mBitmapTexture,transform,0,0,mInputWindowSurface.getWidth(),mInputWindowSurface.getHeight());
+
+        mGLCanvas.drawSurfaceTexture(mBitmapTexture,transform,0,0,480,480);
         //mFullScreen.drawFrame(mTextureId, transform);
         drawBox(mFrameNum++);
         //drawBitmap();
@@ -422,7 +425,7 @@ public class TextureMovieEncoder implements Runnable {
         mBitmap = Bitmap.createBitmap(480,480, Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas();
         canvas.drawColor(Color.WHITE);
-        mBitmapTexture = mGLCanvas.bindBitmapToTexture(id,mBitmap);
+        mBitmapTexture =  mGLCanvas.bindBitmapToTexture(id,mBitmap);
         return  mBitmapTexture.getId();
     }
 
@@ -449,7 +452,7 @@ public class TextureMovieEncoder implements Runnable {
         // Create new programs and such for the new context.
         mFullScreen = new FullFrameRect(
                 new Texture2dProgram(Texture2dProgram.ProgramType.TEXTURE_EXT));
-        mGLCanvas = new CanvasGL();
+        //mGLCanvas = new CanvasGL();
     }
 
     private void prepareEncoder(EGLContext sharedContext, int width, int height, int bitRate,
@@ -459,12 +462,12 @@ public class TextureMovieEncoder implements Runnable {
         } catch (IOException ioe) {
             throw new RuntimeException(ioe);
         }
-        mGLCanvas = new CanvasGL();
         mEglCore = new EglCore(sharedContext, EglCore.FLAG_RECORDABLE);
         mInputWindowSurface = new WindowSurface(mEglCore, mVideoEncoder.getInputSurface(), true);
         mInputWindowSurface.makeCurrent();
         mFullScreen = new FullFrameRect(
                 new Texture2dProgram(Texture2dProgram.ProgramType.TEXTURE_EXT));
+
     }
 
     private void releaseEncoder() {
@@ -489,7 +492,6 @@ public class TextureMovieEncoder implements Runnable {
     private void drawBox(int posn) {
         final int width = mInputWindowSurface.getWidth();
         int xpos = (posn * 4) % (width - 50);
-        GLES20.glEnable(GLES20.GL_SCISSOR_TEST);
         GLES20.glEnable(GLES20.GL_SCISSOR_TEST);
         for (int j=0;j<i;j++){
             GLES20.glScissor(j,j, 2, 2);

@@ -28,13 +28,14 @@ import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import demo.recorder.MainActivity;
+import demo.recorder.CameraCaptureActivity;
+
 
 /**
  * Some handy utilities.
  */
 public class MiscUtils {
-    private static final String TAG = MainActivity.TAG;
+    private static final String TAG = CameraCaptureActivity.TAG;
 
     private MiscUtils() {}
 

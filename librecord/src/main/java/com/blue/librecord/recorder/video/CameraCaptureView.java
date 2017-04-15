@@ -599,8 +599,6 @@ public class CameraCaptureView extends GLSurfaceView implements SurfaceTexture.O
             throw new RuntimeException("摄像头已经初始化，不能重复进行初始化");
         }
 
-        closeCamera();
-
         // 得到摄像头的个数
         int numCameras = Camera.getNumberOfCameras();
         for (int i = 0; i < numCameras; i++) {
