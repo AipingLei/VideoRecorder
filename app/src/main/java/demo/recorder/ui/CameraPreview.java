@@ -34,7 +34,7 @@ public  class CameraPreview extends GLSurfaceView implements GLSurfaceView.Rende
     private static final String TAG = "CameraPreview";
     protected CanvasGL mCanvas;
 
-    protected CameraTexture mTexture;
+    public static CameraTexture mTexture;
 
     private OnSizeChangeCallback onSizeChangeCallback;
 

@@ -44,6 +44,7 @@ import demo.recorder.gles.WindowSurface;
 import demo.recorder.gles.canvas.CanvasGL;
 import demo.recorder.gles.canvas.glcanvas.BitmapTexture;
 import demo.recorder.gles.canvas.glcanvas.CameraTexture;
+import demo.recorder.gles.canvas.glcanvas.GLPaint;
 
 /**
  * Encode a movie from frames rendered from an external texture image.
@@ -250,8 +251,12 @@ public class TextureMovieEncoder implements Runnable {
             return;
         }
         mTimeStamp = timestamp;
+        Object[] data = new Object[2];
+        data[0] = transform;
+        data[1] = st;
+
         mHandler.sendMessage(mHandler.obtainMessage(MSG_FRAME_AVAILABLE,
-                (int) (timestamp >> 32), (int) timestamp, transform));
+                (int) (timestamp >> 32), (int) timestamp, data));
     }
 
     /**
@@ -324,7 +329,9 @@ public class TextureMovieEncoder implements Runnable {
                 case MSG_FRAME_AVAILABLE:
                     long timestamp = (((long) inputMessage.arg1) << 32) |
                             (((long) inputMessage.arg2) & 0xffffffffL);
-                    encoder.handleFrameAvailable((float[]) obj, timestamp);
+                    Object[] objs = ( Object[])inputMessage.obj;
+
+                    encoder.handleFrameAvailable((float[]) objs[0], (SurfaceTexture)objs[1],timestamp);
                     break;
                 case MSG_SET_TEXTURE_ID:
                     encoder.handleSetTexture(inputMessage.arg1);
@@ -365,13 +372,15 @@ public class TextureMovieEncoder implements Runnable {
      * @param transform The texture transform, from SurfaceTexture.
      * @param timestampNanos The frame's timestamp, from SurfaceTexture.
      */
-    private void handleFrameAvailable(float[] transform, long timestampNanos) {
+    private void handleFrameAvailable(float[] transform, SurfaceTexture surfaceTexture,long timestampNanos) {
         if (VERBOSE) Log.d(TAG, "handleFrameAvailable tr=" + transform);
         mVideoEncoder.drainEncoder(false);
-
-        mGLCanvas.drawSurfaceTexture(mBitmapTexture,transform,0,0,480,480);
-        //mFullScreen.drawFrame(mTextureId, transform);
-        drawBox(mFrameNum++);
+        mGLCanvas.drawSurfaceTexture(mBitmapTexture,surfaceTexture,0,0,480,480);
+      /*  GLPaint spaint = new GLPaint();
+        spaint.setColor(Color.BLUE);*/
+       /* mGLCanvas.drawRect(0,0,200,200,spaint);
+        mFullScreen.drawFrame(mTextureId, transform);*/
+        //drawBox(mFrameNum++);
         //drawBitmap();
         mInputWindowSurface.setPresentationTime(timestampNanos);
         mInputWindowSurface.swapBuffers();
@@ -450,8 +459,8 @@ public class TextureMovieEncoder implements Runnable {
         mInputWindowSurface.makeCurrent();
 
         // Create new programs and such for the new context.
-        mFullScreen = new FullFrameRect(
-                new Texture2dProgram(Texture2dProgram.ProgramType.TEXTURE_EXT));
+       /* mFullScreen = new FullFrameRect(
+                new Texture2dProgram(Texture2dProgram.ProgramType.TEXTURE_EXT));*/
         //mGLCanvas = new CanvasGL();
     }
 
