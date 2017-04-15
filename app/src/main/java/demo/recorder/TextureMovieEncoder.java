@@ -465,8 +465,9 @@ public class TextureMovieEncoder implements Runnable {
         mEglCore = new EglCore(sharedContext, EglCore.FLAG_RECORDABLE);
         mInputWindowSurface = new WindowSurface(mEglCore, mVideoEncoder.getInputSurface(), true);
         mInputWindowSurface.makeCurrent();
-        mFullScreen = new FullFrameRect(
-                new Texture2dProgram(Texture2dProgram.ProgramType.TEXTURE_EXT));
+       /* mFullScreen = new FullFrameRect(
+                new Texture2dProgram(Texture2dProgram.ProgramType.TEXTURE_EXT));*/
+        mGLCanvas = new CanvasGL();
 
     }
 
