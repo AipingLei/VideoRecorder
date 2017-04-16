@@ -1,10 +1,9 @@
-package com.blue.librecord.recorder.video;
+package jp.co.cyberagent.android.gpuimage.filter;
 
 
 import android.content.Context;
 
 import jp.co.cyberagent.android.gpuimage.GPUFilterType;
-import jp.co.cyberagent.android.gpuimage.filter.GPUImageFilter;
 import jp.co.cyberagent.android.gpuimage.filter.base.GPUImageSwirlFilter;
 import jp.co.cyberagent.android.gpuimage.filter.expand.magic.MagicRiseFilter;
 import jp.co.cyberagent.android.gpuimage.filter.expand.magic.MagicRomanceFilter;

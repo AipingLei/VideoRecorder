@@ -1,8 +1,7 @@
-package com.blue.librecord.recorder.video;
+package jp.co.cyberagent.android.gpuimage.filter;
 
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
-import android.graphics.Paint;
 
 import jp.co.cyberagent.android.gpuimage.filter.base.GPUImageSourceOverBlendFilter;
 

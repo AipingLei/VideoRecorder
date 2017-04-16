@@ -6,20 +6,15 @@ import android.graphics.SurfaceTexture;
 import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
-import android.os.Build;
 import android.util.AttributeSet;
 import android.util.Log;
 
 
 import com.blue.librecord.recorder.gles.GlUtil;
-import com.blue.librecord.recorder.video.CameraSurfaceRenderer;
-import com.blue.librecord.recorder.video.TextureMovieEncoder;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
-import demo.recorder.gles.canvas.CanvasGL;
-import demo.recorder.gles.canvas.glcanvas.CameraTexture;
 import demo.recorder.media.TexureObserver;
 import jp.co.cyberagent.android.gpuimage.filter.FilterWrapper;
 import jp.co.cyberagent.android.gpuimage.filter.MagicCameraInputFilter;
@@ -33,8 +28,6 @@ import jp.co.cyberagent.android.gpuimage.filter.MagicCameraInputFilter;
  */
 public  class CameraPreview extends GLSurfaceView implements GLSurfaceView.Renderer{
     private static final String TAG = "CameraPreview";
-
-    public static CameraTexture mTexture;
 
     private OnSizeChangeCallback onSizeChangeCallback;
 
@@ -123,30 +116,6 @@ public  class CameraPreview extends GLSurfaceView implements GLSurfaceView.Rende
         int textureID = mCameraInputFilter.onDrawToTexture(mTextureId, mIncomingWidth, mIncomingHeight);
         mFilterWrapper.drawFrame(textureID, mIncomingWidth, mIncomingHeight);
         mObServer.onDrawFrame(mSurfaceTexture,textureID);
-    }
-
-
-    int[] prePoint = new int[2];
-    int mFramecount;
-
-    private void onGLCanvasDraw(CanvasGL aCanvas) {
-        mFramecount++;
-        //normalCanvas = new Canvas(bitmap);
-        aCanvas.drawSurfaceTexture(mTexture,mSurfaceTexture,0,0,mIncomingWidth,mIncomingHeight);
-       /* boolean invalidata = false;
-        if (mFramecount % 10 ==0){
-            Path path = new Path();                     //Path对象
-            path.moveTo(prePoint[0], prePoint[1]);                         //起始点
-            int fator = (mFramecount % 20 == 0)? -1:1;
-            prePoint[0] += 20;
-            if (prePoint[0] > 480) prePoint[0]=0;
-            prePoint[1] += 70*fator;
-            path.lineTo(prePoint[0], prePoint[1]);
-            normalCanvas.drawPath(path, mPaint);                   //绘制任意多边形
-            aCanvas.drawBitmap(bitmap, 0, 0,true);
-        }else{
-            aCanvas.drawBitmap(bitmap, 0, 0,false);
-        }*/
     }
 
 

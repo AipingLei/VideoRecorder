@@ -18,6 +18,7 @@ import javax.microedition.khronos.opengles.GL10;
 
 import jp.co.cyberagent.android.gpuimage.GPUFilterType;
 import jp.co.cyberagent.android.gpuimage.Rotation;
+import jp.co.cyberagent.android.gpuimage.filter.FilterFactory;
 import jp.co.cyberagent.android.gpuimage.filter.FilterWrapper;
 import jp.co.cyberagent.android.gpuimage.filter.GPUImageFilter;
 import jp.co.cyberagent.android.gpuimage.filter.MagicCameraInputFilter;

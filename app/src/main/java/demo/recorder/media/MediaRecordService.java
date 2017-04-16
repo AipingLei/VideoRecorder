@@ -85,7 +85,7 @@ public class MediaRecordService implements OnRecordStatusChangedListener {
         mVideoRecordCore.setOnRecordStatusChangedListener(this);
         mVideoRecordCore.configOutputFile(new File(recordVideo));
         mVideoRecordCore.configRecordQualityType(VideoRecordCore.QUALITY_NORMAL_HIGH);
-        mVideoRecordCore.configRecordSize(480, 480);
+        mVideoRecordCore.configRecordSize(960, 960);
         mVideoRecordCore.configIntervalNotifyRecordProcessing(1000);
     }
 

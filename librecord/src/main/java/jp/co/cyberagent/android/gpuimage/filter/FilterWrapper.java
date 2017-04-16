@@ -10,8 +10,6 @@ import jp.co.cyberagent.android.gpuimage.Rotation;
 import jp.co.cyberagent.android.gpuimage.util.TextureRotationUtil;
 import android.annotation.SuppressLint;
 
-import com.blue.librecord.recorder.video.FilterFactory;
-
 @SuppressLint("WrongCall")
 public class FilterWrapper {
 	private GPUImageFilter mFilter;

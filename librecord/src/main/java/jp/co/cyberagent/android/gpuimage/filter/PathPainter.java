@@ -1,4 +1,4 @@
-package com.blue.librecord.recorder.video;
+package jp.co.cyberagent.android.gpuimage.filter;
 
 import android.graphics.Canvas;
 import android.graphics.Color;
