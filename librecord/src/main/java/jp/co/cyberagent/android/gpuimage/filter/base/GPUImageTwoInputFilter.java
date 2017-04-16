@@ -66,11 +66,11 @@ public class GPUImageTwoInputFilter extends GPUImageFilter {
         GLES20.glEnableVertexAttribArray(mFilterSecondTextureCoordinateAttribute);
 
         if (mBitmap != null&&!mBitmap.isRecycled()) {
-            setBitmap(mBitmap);
+            setBitmap(mBitmap,false);
         }
     }
     
-    public void setBitmap(final Bitmap bitmap) {
+    public void setBitmap(final Bitmap bitmap, final boolean refresh) {
         if (bitmap != null && bitmap.isRecycled()) {
             return;
         }
@@ -80,7 +80,7 @@ public class GPUImageTwoInputFilter extends GPUImageFilter {
         }
         runOnDraw(new Runnable() {
             public void run() {
-                if (mFilterSourceTexture2 == OpenGLUtils.NO_TEXTURE) {
+                if (mFilterSourceTexture2 == OpenGLUtils.NO_TEXTURE || refresh) {
                     if (bitmap == null || bitmap.isRecycled()) {
                         return;
                     }

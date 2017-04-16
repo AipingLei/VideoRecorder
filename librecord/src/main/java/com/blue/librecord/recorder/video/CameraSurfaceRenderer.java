@@ -99,7 +99,7 @@ public class CameraSurfaceRenderer implements GLSurfaceView.Renderer {
     // 当前滤镜
     private GPUFilterType curFilterType;
     // 滤镜工具类
-    private FilterUtil filterUtil;
+    private FilterFactory filterFactory;
 
     // 滤镜控制器
     private FilterWrapper filterWrapper;
@@ -252,8 +252,8 @@ public class CameraSurfaceRenderer implements GLSurfaceView.Renderer {
         mCameraInputFilter.init();
 
         // 滤镜初始化
-        filterUtil = new FilterUtil(mContext);
-        filters = filterUtil.getFilters();
+       /* filterFactory = new FilterFactory(mContext);
+        filters = filterFactory.getFilters();*/
         if (null != presetFilterType) {
             setFilter(presetFilterType);
         } else if (null != curFilterType) {

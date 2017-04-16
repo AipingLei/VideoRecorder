@@ -79,7 +79,7 @@
         <demo.recorder.ui.CameraPreview
             android:id="@+id/record_preview"
             android:layout_width="match_parent"
-            android:layout_height="match_parent" />
+            android:layout_height="360dp" />
 
         <ImageView
             android:id="@+id/record_focusing"

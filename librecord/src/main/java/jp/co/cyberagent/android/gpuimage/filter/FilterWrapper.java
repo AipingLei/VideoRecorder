@@ -4,27 +4,27 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 
+import jp.co.cyberagent.android.gpuimage.GPUFilterType;
 import jp.co.cyberagent.android.gpuimage.GPUImage;
 import jp.co.cyberagent.android.gpuimage.Rotation;
 import jp.co.cyberagent.android.gpuimage.util.TextureRotationUtil;
 import android.annotation.SuppressLint;
 
+import com.blue.librecord.recorder.video.FilterFactory;
+
 @SuppressLint("WrongCall")
 public class FilterWrapper {
 	private GPUImageFilter mFilter;
 
-	public FilterWrapper(GPUImageFilter filter) {
-		this.mFilter = filter;
-
+	public FilterWrapper(GPUImageFilter aFilter) {
+		this.mFilter = aFilter;
 		mGLCubeBuffer = ByteBuffer.allocateDirect(CUBE.length * 4)
 				.order(ByteOrder.nativeOrder()).asFloatBuffer();
 		mGLCubeBuffer.put(CUBE).position(0);
-
 		mGLTextureBuffer = ByteBuffer
 				.allocateDirect(
 						TextureRotationUtil.TEXTURE_NO_ROTATION.length * 4)
 				.order(ByteOrder.nativeOrder()).asFloatBuffer();
-		
 	}
 
 	public GPUImageFilter getFilter() {
@@ -35,15 +35,11 @@ public class FilterWrapper {
 	 * 设置滤镜
 	 * @param filter
 	 */
-	public void setFilter(GPUImageFilter filter)
-	{
-		if(null != filter && this.mFilter != filter)
-		{
-			if(this.mFilter != null)
-			{
+	public void setFilter(GPUImageFilter filter) {
+		if(null != filter && this.mFilter != filter) {
+			if(this.mFilter != null) {
 				this.mFilter.destroy();
 			}
-			
 			this.mFilter = filter;
 			initFilter();
 		}
@@ -138,8 +134,7 @@ public class FilterWrapper {
 		adjustImageScaling();
 	}
 	
-	public void onSurfaceSizeChanged(int surfaceWidth, int surfaceHeight)
-    {
+	public void onSurfaceSizeChanged(int surfaceWidth, int surfaceHeight) {
     	mFilter.onSurfaceSizeChanged(surfaceWidth, surfaceHeight);
     }
 	
@@ -154,9 +149,27 @@ public class FilterWrapper {
 
 		mFilter.onDraw(textureId, mGLCubeBuffer, mGLTextureBuffer);
 	}
-	public void destory()
-	{
+	public void destory() {
 		mFilter.onDestroy();
+	}
+
+	public static FilterWrapper buildFilterWrapper(GPUFilterType aFilterType, int aOrientation, boolean aFlipHorizontal, boolean aFlipVertical) {
+		FilterWrapper filterWrapper = new FilterWrapper(FilterFactory.getFilter(aFilterType));
+		filterWrapper.initFilter();
+		switch (aOrientation) {
+			case 90:
+				filterWrapper.setRotation(Rotation.ROTATION_90, aFlipHorizontal, aFlipVertical);
+				break;
+			case 180:
+				filterWrapper.setRotation(Rotation.ROTATION_180, aFlipHorizontal, aFlipVertical);
+				break;
+			case 270:
+				filterWrapper.setRotation(Rotation.ROTATION_270, aFlipHorizontal, aFlipVertical);
+				break;
+			default:
+				break;
+		}
+		return  filterWrapper;
 	}
 	
 }

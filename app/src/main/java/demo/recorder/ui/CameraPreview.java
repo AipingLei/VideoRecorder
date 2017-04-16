@@ -1,20 +1,19 @@
 package demo.recorder.ui;
 
 import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
-import android.graphics.Path;
 import android.graphics.PixelFormat;
 import android.graphics.SurfaceTexture;
 import android.opengl.GLES11Ext;
+import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.os.Build;
-import android.os.Handler;
 import android.util.AttributeSet;
 import android.util.Log;
 
+
+import com.blue.librecord.recorder.gles.GlUtil;
+import com.blue.librecord.recorder.video.CameraSurfaceRenderer;
+import com.blue.librecord.recorder.video.TextureMovieEncoder;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -22,6 +21,8 @@ import javax.microedition.khronos.opengles.GL10;
 import demo.recorder.gles.canvas.CanvasGL;
 import demo.recorder.gles.canvas.glcanvas.CameraTexture;
 import demo.recorder.media.TexureObserver;
+import jp.co.cyberagent.android.gpuimage.filter.FilterWrapper;
+import jp.co.cyberagent.android.gpuimage.filter.MagicCameraInputFilter;
 
 /**
  * description: describe the class
@@ -32,7 +33,6 @@ import demo.recorder.media.TexureObserver;
  */
 public  class CameraPreview extends GLSurfaceView implements GLSurfaceView.Renderer{
     private static final String TAG = "CameraPreview";
-    protected CanvasGL mCanvas;
 
     public static CameraTexture mTexture;
 
@@ -43,11 +43,9 @@ public  class CameraPreview extends GLSurfaceView implements GLSurfaceView.Rende
     private int mTextureId;
     private SurfaceTexture mSurfaceTexture;
     private TexureObserver mObServer;
-    private Bitmap bitmap;
-    private Canvas normalCanvas;
-    Paint mPaint = new Paint();
-
-
+    // 滤镜控制器
+    private FilterWrapper mFilterWrapper;
+    private MagicCameraInputFilter mCameraInputFilter;
 
     public CameraPreview(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -59,43 +57,50 @@ public  class CameraPreview extends GLSurfaceView implements GLSurfaceView.Rende
     }
 
     protected void init() {
-        //setZOrderOnTop(true);
         setEGLContextClientVersion(2);
-        setEGLConfigChooser(8, 8, 8, 8, 16, 0);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-            setPreserveEGLContextOnPause(true);
-        }
-        getHolder().setFormat(PixelFormat.TRANSLUCENT);
         setRenderer(this);
         setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
-        bitmap = Bitmap.createBitmap(480,480, Bitmap.Config.ARGB_8888);
-        mPaint = new Paint();
-        mPaint.setColor(Color.BLUE);
-        mPaint.setAntiAlias(true);
-        mPaint.setStrokeWidth((float) 3.0);              //线宽
-        mPaint.setStyle(Paint.Style.STROKE);
     }
 
     @Override
     public void onSurfaceCreated(GL10 gl, EGLConfig config) {
-        mCanvas = new CanvasGL();
-        mTexture = new CameraTexture(mIncomingWidth,mIncomingHeight,false, GLES11Ext.GL_TEXTURE_EXTERNAL_OES);
-        mTexture.prepare(mCanvas.getIGLCanvas());
-        mTextureId = mTexture.getId();
-
+        int[] textures = new int[1];
+        GLES20.glGenTextures(1, textures, 0);
+        GlUtil.checkGlError("glGenTextures");
         // Create a SurfaceTexture, with an external texture, in this EGL context.  We don't
         // have a Looper in this thread -- GLSurfaceView doesn't create one -- so the frame
         // available messages will arrive on the main thread.
+        int texId = textures[0];
+        GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, texId);
+        GlUtil.checkGlError("glBindTexture " + texId);
+        GLES20.glTexParameterf(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_NEAREST);
+        GLES20.glTexParameterf(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
+        GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE);
+        GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE);
+        GlUtil.checkGlError("glTexParameter");
+        mTextureId = texId;
         mSurfaceTexture = new SurfaceTexture(mTextureId);
+        // Tell the ObServer to enable the camera preview.
         mObServer.onSurfaceCreated(mSurfaceTexture);
-        // Tell the UI thread to enable the camera preview.
+        // 摄像头采集数据转换器
+        mCameraInputFilter = new MagicCameraInputFilter();
+        mCameraInputFilter.init();
     }
+
 
     @Override
     public void onSurfaceChanged(GL10 gl, int width, int height) {
-        mCanvas.setSize(width, height);
+        GLES20.glViewport(0, 0, width, height);
+        mFilterWrapper.onOutpuSizeChanged(width, height);
+        mFilterWrapper.onSurfaceSizeChanged(width, height);
+        mIncomingWidth = width;
+        mIncomingHeight = height;
+        mCameraInputFilter.onOutputSizeChanged(mIncomingWidth, mIncomingHeight);
+        mCameraInputFilter.initCameraFrameBuffer(mIncomingWidth, mIncomingHeight);
         mObServer.onSurfaceChanged(gl,width,height);
     }
+
+    float[] mtx = new float[16];
 
     @Override
     public void onDrawFrame(GL10 gl) {
@@ -107,19 +112,17 @@ public  class CameraPreview extends GLSurfaceView implements GLSurfaceView.Rende
             Log.i(TAG, "Drawing before incoming texture size set; skipping");
             return;
         }
-/*
-        if (mIncomingSizeUpdated) {
-            mFullScreen.getProgram().setTexSize(mIncomingWidth, mIncomingHeight);
-            mIncomingSizeUpdated = false;
-        }
-
-        // Draw the video frame.
-        mSurfaceTexture.getTransformMatrix(mSTMatrix);
-        mFullScreen.drawFrame(mTextureId, mSTMatrix);*/
-        this.gl = gl;
-        mCanvas.clearBuffer();
-        onGLCanvasDraw(mCanvas);
-        mObServer.onDrawFrame(mSurfaceTexture,mTextureId);
+        GLES20.glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
+        mSurfaceTexture.updateTexImage();
+        mSurfaceTexture.getTransformMatrix(mtx);
+        // 转换摄像头数据并且绘制
+        mCameraInputFilter.setTextureTransformMatrix(mtx);
+        mCameraInputFilter.onDraw(mTextureId);
+        // 滤镜绘制
+        int textureID = mCameraInputFilter.onDrawToTexture(mTextureId, mIncomingWidth, mIncomingHeight);
+        mFilterWrapper.drawFrame(textureID, mIncomingWidth, mIncomingHeight);
+        mObServer.onDrawFrame(mSurfaceTexture,textureID);
     }
 
 
@@ -155,6 +158,10 @@ public  class CameraPreview extends GLSurfaceView implements GLSurfaceView.Rende
         }
     }
 
+    public void setFilterWrapper(FilterWrapper filterWrapper) {
+        this.mFilterWrapper = filterWrapper;
+    }
+
     interface OnSizeChangeCallback {
         void onSizeChange(int w, int h, int oldw, int oldh);
     }
@@ -179,8 +186,6 @@ public  class CameraPreview extends GLSurfaceView implements GLSurfaceView.Rende
     }
 
 
-    // width/height of the incoming camera preview frames
-    private boolean mIncomingSizeUpdated;
     private int mIncomingWidth;
     private int mIncomingHeight;
 
@@ -195,85 +200,5 @@ public  class CameraPreview extends GLSurfaceView implements GLSurfaceView.Rende
         Log.d(TAG, "setCameraPreviewSize");
         mIncomingWidth = width;
         mIncomingHeight = height;
-        mIncomingSizeUpdated = true;
     }
-
-    /*   @Override
-       public void onDrawFrame(GL10 unused) {
-           if (VERBOSE) Log.d(TAG, "onDrawFrame tex=" + mTextureId);
-           boolean showBox = false;
-
-           // Latch the latest frame.  If there isn't anything new, we'll just re-use whatever
-           // was there before.
-           mSurfaceTexture.updateTexImage();
-
-           // If the recording state is changing, take care of it here.  Ideally we wouldn't
-           // be doing all this in onDrawFrame(), but the EGLContext sharing with GLSurfaceView
-           // makes it hard to do elsewhere.
-           if (mRecordingEnabled) {
-               switch (mRecordingStatus) {
-                   case RECORDING_OFF:
-                       Log.d(TAG, "START recording");
-                       // start recording
-                       mVideoEncoder.startRecording(new TextureMovieEncoder.EncoderConfig(
-                               mOutputFile, 640, 480, 1000000, EGL14.eglGetCurrentContext()));
-                       mRecordingStatus = RECORDING_ON;
-                       break;
-                   case RECORDING_RESUMED:
-                       Log.d(TAG, "RESUME recording");
-                       mVideoEncoder.updateSharedContext(EGL14.eglGetCurrentContext());
-                       mRecordingStatus = RECORDING_ON;
-                       break;
-                   case RECORDING_ON:
-                       // yay
-                       break;
-                   default:
-                       throw new RuntimeException("unknown status " + mRecordingStatus);
-               }
-           } else {
-               switch (mRecordingStatus) {
-                   case RECORDING_ON:
-                   case RECORDING_RESUMED:
-                       // stop recording
-                       Log.d(TAG, "STOP recording");
-                       mVideoEncoder.stopRecording();
-                       mRecordingStatus = RECORDING_OFF;
-                       break;
-                   case RECORDING_OFF:
-                       // yay
-                       break;
-                   default:
-                       throw new RuntimeException("unknown status " + mRecordingStatus);
-               }
-           }
-
-           // Set the video encoder's texture name.  We only need to do this once, but in the
-           // current implementation it has to happen after the video encoder is started, so
-           // we just do it here.
-           //
-           // TODO: be less lame.
-           mVideoEncoder.setTextureId(mTextureId);
-
-           // Tell the video encoder thread that a new frame is available.
-           // This will be ignored if we're not actually recording.
-           mVideoEncoder.frameAvailable(mSurfaceTexture);
-
-           if (mIncomingWidth <= 0 || mIncomingHeight <= 0) {
-               // Texture size isn't set yet.  This is only used for the filters, but to be
-               // safe we can just skip drawing while we wait for the various races to resolve.
-               // (This seems to happen if you toggle the screen off/on with power button.)
-               Log.i(TAG, "Drawing before incoming texture size set; skipping");
-               return;
-           }
-           if (mIncomingSizeUpdated) {
-               mFullScreen.getProgram().setTexSize(mIncomingWidth, mIncomingHeight);
-               mIncomingSizeUpdated = false;
-           }
-
-           // Draw the video frame.
-           mSurfaceTexture.getTransformMatrix(mSTMatrix);
-           mFullScreen.drawFrame(mTextureId, mSTMatrix);
-           // Draw a flashing box if we're recording.  This only appears on screen.
-           showBox = (mRecordingStatus == RECORDING_ON);
-       }*/
 }

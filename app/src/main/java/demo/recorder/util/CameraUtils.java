@@ -107,7 +107,7 @@ public class CameraUtils {
         return guess;
     }
 
-    public static void setCameraDisplayOrientation(Activity activity,
+    public static int setCameraDisplayOrientation(Activity activity,
                                                    int cameraId, android.hardware.Camera camera) {
         android.hardware.Camera.CameraInfo info =
                 new android.hardware.Camera.CameraInfo();
@@ -129,9 +129,10 @@ public class CameraUtils {
             result = (info.orientation - degrees + 360) % 360;
         }
         camera.setDisplayOrientation(result);
+        return  result;
     }
 
-    static final int PREVIEW_SIZE_BEST_WIDTH = 720; // 预览最优值
+    static final int PREVIEW_SIZE_BEST_WIDTH = 1080; // 预览最优值
     static final int PREVIEW_SIZE_MAX_WIDTH = 1280; // 预览最大宽度
     static final int PREVIEW_SIZE_MIN_WIDTH = 240; // 预览最小宽度
 

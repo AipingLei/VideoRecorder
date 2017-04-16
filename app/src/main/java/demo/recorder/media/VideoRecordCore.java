@@ -1,6 +1,8 @@
 package demo.recorder.media;
 
 import android.app.Activity;
+import android.content.Context;
+import android.graphics.Point;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
 import android.opengl.EGL14;
@@ -8,16 +10,21 @@ import android.opengl.GLES20;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
+import android.view.WindowManager;
 
 import java.io.File;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
+import java.util.List;
 
 import javax.microedition.khronos.opengles.GL10;
 
 import demo.recorder.util.CameraUtils;
 import demo.recorder.TextureMovieEncoder;
 import demo.recorder.ui.CameraPreview;
+import jp.co.cyberagent.android.gpuimage.GPUFilterType;
+import jp.co.cyberagent.android.gpuimage.filter.FilterWrapper;
+import jp.co.cyberagent.android.gpuimage.filter.MagicCameraInputFilter;
 
 import static demo.recorder.media.MediaRecordService.RECORDING_OFF;
 import static demo.recorder.media.MediaRecordService.RECORDING_ON;
@@ -35,20 +42,18 @@ public class VideoRecordCore implements TexureObserver,SurfaceTexture.OnFrameAva
     private Camera mCamera;
     private static final String TAG = "VideoRecordCore";
 
-    private int mCameraPreviewWidth, mCameraPreviewHeight;
-
-    private TextureMovieEncoder mVideoEncoder;
     private CameraPreview mCameraPreview;
+    private TextureMovieEncoder mVideoEncoder;
+
+    private int mDisplayWidth, mDisplayHeight;
+    /**
+     * Video output prams
+     */
+    private int mRecordWidth,mRecordHeight;
     private File mOutputFile;
     private boolean mRecordingEnabled;
-    private int mRecordingStatus;
     private int mRecordQualityType;
-    private int mRecordWidth;
-    private int mRecordHeight;
-    private boolean isShowTestBox;
-    private boolean mPauseEnabled;
     protected OnRecordStatusChangedListener mOnRecordStatusChangedListener;
-
     /**
      * Video quality
      */
@@ -57,8 +62,14 @@ public class VideoRecordCore implements TexureObserver,SurfaceTexture.OnFrameAva
     public static final int QUALITY_NORMAL = 2;
     public static final int QUALITY_NORMAL_LOW = 3;
     public static final int QUALITY_LOW = 4;
+
+    /**
+     * record control
+     */
     private int mFrameCount;
     private boolean mIsNotifiedPause;
+    private boolean mPauseEnabled;
+    private int mRecordingStatus;
     private long mCurTimeCalcRecordTime;
     private long mLastTimeCalcRecordTime;
     /**
@@ -73,7 +84,9 @@ public class VideoRecordCore implements TexureObserver,SurfaceTexture.OnFrameAva
     private boolean mFlipHorizontal;
     private boolean mFlipVertical;
 
-    public VideoRecordCore() {
+    public VideoRecordCore(GPUFilterType aDisplayFilterType,GPUFilterType aReocordFilterType) {
+        this.mDisplayFilterType = aDisplayFilterType;
+        this.mReocordFilterType = aReocordFilterType;
         mVideoEncoder = new TextureMovieEncoder();
     }
 
@@ -99,7 +112,7 @@ public class VideoRecordCore implements TexureObserver,SurfaceTexture.OnFrameAva
     /**
      * Opens a camera, and attempts to establish preview mode at the specified width and height.
      * <p>
-     * Sets mCameraPreviewWidth and mCameraPreviewHeight to the actual width/height of the preview.
+     * Sets mDisplayWidth and mDisplayHeight to the actual width/height of the preview.
      */
     protected void openCamera(int desiredWidth, int desiredHeight) {
         if (mCamera != null) {
@@ -130,8 +143,15 @@ public class VideoRecordCore implements TexureObserver,SurfaceTexture.OnFrameAva
          * init camera params
          */
         Camera.Parameters parms = mCamera.getParameters();
-        CameraUtils.choosePreviewSize(parms, desiredWidth, desiredHeight);
+        Camera.Size size = CameraUtils.determineBestPreviewSize(mCameraPreview.getContext(),parms,info.orientation);
+        parms.setPreviewSize(size.width, size.height);
         CameraUtils.setCameraDisplayOrientation((Activity)mCameraPreview.getContext(),id,mCamera);
+        // 设置聚焦
+        List<String> supportedFocusModes = parms.getSupportedFocusModes();
+        if (supportedFocusModes != null && supportedFocusModes.contains(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO)) {
+            // 开启连续对焦功能
+            parms.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO);
+        }
         // Give the camera a hint that we're recording video.  This can have a big
         // impact on frame rate.
         parms.setRecordingHint(true);
@@ -139,11 +159,11 @@ public class VideoRecordCore implements TexureObserver,SurfaceTexture.OnFrameAva
         mCamera.setParameters(parms);
         // setCameraDisplayOrientation(this,id,mCamera);
         Camera.Size mCameraPreviewSize = parms.getPreviewSize();
-        mCameraPreviewWidth = mCameraPreviewSize.width;
-        mCameraPreviewHeight = mCameraPreviewSize.height;
+        mDisplayWidth = mCameraPreviewSize.height;
+        mDisplayHeight = mCameraPreviewSize.width;
         mCameraPreview.queueEvent(new Runnable() {
             @Override public void run() {
-                mCameraPreview.setCameraPreviewSize(mCameraPreviewWidth, mCameraPreviewHeight);
+                mCameraPreview.setCameraPreviewSize(mDisplayWidth, mDisplayHeight);
             }
         });
 
@@ -197,6 +217,7 @@ public class VideoRecordCore implements TexureObserver,SurfaceTexture.OnFrameAva
         }else {
             mRecordingStatus = RECORDING_OFF;
         }
+        initFilterParam();
     }
 
     @Override
@@ -318,26 +339,11 @@ public class VideoRecordCore implements TexureObserver,SurfaceTexture.OnFrameAva
                     throw new RuntimeException(TAG+"unknow mRecordingStatus: " + mRecordingStatus);
             }
         }
-        drawTestBox();
     }
 
-    private void drawTestBox() {
-        if (isShowTestBox) {
-            // Test
-            if (mRecordingEnabled) {
-                if (mPauseEnabled) {
-                    drawBox();
-                } else {
-                    if ((++mFrameCount & 0x04) == 0) {
-                        drawBox();
-                    }
-                }
-            }
-        }
-    }
 
     private void resumeRecording() {
-        mVideoEncoder.updateSharedContext(EGL14.eglGetCurrentContext());
+        mVideoEncoder.updateSharedContext(EGL14.eglGetCurrentContext(),createFilterWrapper(mReocordFilterType,mRecordWidth,mRecordHeight));
         mRecordingStatus = RECORDING_ON;
         if(null != mOnRecordStatusChangedListener && mRecordingEnabled)
         {
@@ -354,9 +360,10 @@ public class VideoRecordCore implements TexureObserver,SurfaceTexture.OnFrameAva
         int qualityParam = getQualityParam();
         // bitrate
         long bitrate = mRecordWidth * mRecordHeight * 3 * 8 * tmpFPS / qualityParam;
+
         Log.d(TAG, " record param：width:" + mRecordWidth + ",height:" + mRecordHeight + "bitrate:" + bitrate);
-        mVideoEncoder.startRecording(new TextureMovieEncoder.EncoderConfig(mOutputFile, mRecordWidth, mRecordHeight, (int) bitrate, mCameraPreviewWidth,
-                mCameraPreviewHeight, EGL14.eglGetCurrentContext()));
+        mVideoEncoder.startRecording(new TextureMovieEncoder.EncoderConfig(mOutputFile, mRecordWidth, mRecordHeight, (int) bitrate, mDisplayWidth,
+                mDisplayHeight, EGL14.eglGetCurrentContext()));
         // Set the video encoder's texture name.  We only need to do this once, but in the
         // current implementation it has to happen after the video encoder is started, so
         // we just do it here.
@@ -412,7 +419,7 @@ public class VideoRecordCore implements TexureObserver,SurfaceTexture.OnFrameAva
         // 通知过暂停
         if (mIsNotifiedPause) {
             Log.d("TAG", "SurfaceRenderer 恢复录制");
-            mVideoEncoder.updateSharedContext(EGL14.eglGetCurrentContext());
+            mVideoEncoder.updateSharedContext(EGL14.eglGetCurrentContext(),createFilterWrapper(mReocordFilterType,mRecordWidth,mRecordHeight));
         }
         // Tell the video encoder thread that a new frame is available.
         // This will be ignored if we're not actually recording.
@@ -473,13 +480,7 @@ public class VideoRecordCore implements TexureObserver,SurfaceTexture.OnFrameAva
         }
     }
 
-
-
-
-    /**
-     * 绘制测试矩形
-     */
-    private void drawBox() {
+    private void drawTestBox() {
         GLES20.glEnable(GLES20.GL_SCISSOR_TEST);
         GLES20.glScissor(0, 0, 100, 100);
         GLES20.glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
@@ -542,5 +543,29 @@ public class VideoRecordCore implements TexureObserver,SurfaceTexture.OnFrameAva
     public void configIntervalNotifyRecordProcessing(int interval) {
         this.mIntervalNotifyRecordProcessing = interval;
     }
+
+    private MagicCameraInputFilter mCameraInputFilter;
+    /**
+     * the filter for displaying by camera preview
+     */
+    private GPUFilterType mDisplayFilterType;
+    /**
+     * the filter for recording by movie encoder
+     */
+    private GPUFilterType mReocordFilterType;
+
+    private void initFilterParam(){
+        mVideoEncoder.setFilterWrapper(createFilterWrapper(mReocordFilterType,mRecordWidth,mRecordHeight));
+        mCameraPreview.setFilterWrapper(createFilterWrapper(mDisplayFilterType,mDisplayWidth,mDisplayHeight));
+    }
+
+    private FilterWrapper createFilterWrapper(GPUFilterType aFilterType,int width,int height){
+        FilterWrapper sFilterWrapper = FilterWrapper.buildFilterWrapper(aFilterType,mDisplayOrientation,false,false);
+        sFilterWrapper.initFilter();
+        sFilterWrapper.onOutpuSizeChanged(width, height);
+        sFilterWrapper.onSurfaceSizeChanged(width, height);
+        return  sFilterWrapper;
+    }
+
 
 }

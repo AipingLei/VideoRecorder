@@ -50,5 +50,6 @@ public enum GPUFilterType
 	FILTER_GPUIMAGE_GLASSSPHERE, // 透过玻璃球效果，类似猫眼、鱼眼效果
 	FILTER_GPUIMAGE_LAPLACIAN, // 拉普拉斯矩阵，类似雕塑效果
 	FILTER_GPUIMAGE_SWIRL, // 漩涡扭曲效果
-	FILTER_GPUIMAGE_THIN_FACE // 漩涡扭曲效果
+	FILTER_GPUIMAGE_THIN_FACE, // 漩涡扭曲效果
+	FILTER_GPUIMAGE_MASK
 }

@@ -16,12 +16,8 @@
 
 package demo.recorder;
 
-import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.SurfaceTexture;
 import android.opengl.EGLContext;
-import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
 import android.os.Handler;
 import android.os.Looper;
@@ -35,16 +31,11 @@ import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.microedition.khronos.opengles.GL11;
 
 import demo.recorder.gles.EglCore;
-import demo.recorder.gles.FullFrameRect;
-import demo.recorder.gles.Texture2dProgram;
 import demo.recorder.gles.WindowSurface;
-import demo.recorder.gles.canvas.CanvasGL;
-import demo.recorder.gles.canvas.glcanvas.BitmapTexture;
-import demo.recorder.gles.canvas.glcanvas.CameraTexture;
-import demo.recorder.gles.canvas.glcanvas.GLPaint;
+import jp.co.cyberagent.android.gpuimage.filter.FilterWrapper;
+import jp.co.cyberagent.android.gpuimage.filter.GPUImageFilter;
 
 /**
  * Encode a movie from frames rendered from an external texture image.
@@ -101,9 +92,13 @@ public class TextureMovieEncoder implements Runnable {
     private List<Long> mResumeTimeStamp = new ArrayList<Long>();
     private boolean mPause;
     private long mTimeStamp;
-    private FullFrameRect mFullScreen;
-    private BitmapTexture mBitmapTexture;
-    private CanvasGL mGLCanvas;
+    private FilterWrapper mFilterWrapper ;
+    private int mWidth;
+    private int mHeight;
+
+    public void setFilterWrapper(FilterWrapper filterWrapper) {
+        this.mFilterWrapper = filterWrapper;
+    }
 
     /**
      * Encoder configuration.
@@ -171,7 +166,6 @@ public class TextureMovieEncoder implements Runnable {
                 }
             }
         }
-
         mHandler.sendMessage(mHandler.obtainMessage(MSG_START_RECORDING, config));
     }
 
@@ -214,8 +208,11 @@ public class TextureMovieEncoder implements Runnable {
     /**
      * Tells the video recorder to refresh its EGL surface.  (Call from non-encoder thread.)
      */
-    public void updateSharedContext(EGLContext sharedContext) {
-        mHandler.sendMessage(mHandler.obtainMessage(MSG_UPDATE_SHARED_CONTEXT, sharedContext));
+    public void updateSharedContext(EGLContext sharedContext,FilterWrapper aFilterWrapper) {
+        Object[] objects = new Object[2];
+        objects[0] = sharedContext;
+        objects[1] = aFilterWrapper;
+        mHandler.sendMessage(mHandler.obtainMessage(MSG_UPDATE_SHARED_CONTEXT, objects));
     }
 
     /**
@@ -250,13 +247,8 @@ public class TextureMovieEncoder implements Runnable {
             Log.w(TAG, "HEY: got SurfaceTexture with timestamp of zero");
             return;
         }
-        mTimeStamp = timestamp;
-        Object[] data = new Object[2];
-        data[0] = transform;
-        data[1] = st;
-
         mHandler.sendMessage(mHandler.obtainMessage(MSG_FRAME_AVAILABLE,
-                (int) (timestamp >> 32), (int) timestamp, data));
+                (int) (timestamp >> 32), (int) timestamp, transform));
     }
 
     /**
@@ -329,15 +321,15 @@ public class TextureMovieEncoder implements Runnable {
                 case MSG_FRAME_AVAILABLE:
                     long timestamp = (((long) inputMessage.arg1) << 32) |
                             (((long) inputMessage.arg2) & 0xffffffffL);
-                    Object[] objs = ( Object[])inputMessage.obj;
 
-                    encoder.handleFrameAvailable((float[]) objs[0], (SurfaceTexture)objs[1],timestamp);
+                    encoder.handleFrameAvailable((float[])obj,timestamp);
                     break;
                 case MSG_SET_TEXTURE_ID:
                     encoder.handleSetTexture(inputMessage.arg1);
                     break;
                 case MSG_UPDATE_SHARED_CONTEXT:
-                    encoder.handleUpdateSharedContext((EGLContext) inputMessage.obj);
+                    Object[] objects = (Object[])inputMessage.obj;
+                    encoder.handleUpdateSharedContext((EGLContext) objects[0],(FilterWrapper)objects[1]);
                     break;
                 case MSG_QUIT:
                     Looper.myLooper().quit();
@@ -372,16 +364,11 @@ public class TextureMovieEncoder implements Runnable {
      * @param transform The texture transform, from SurfaceTexture.
      * @param timestampNanos The frame's timestamp, from SurfaceTexture.
      */
-    private void handleFrameAvailable(float[] transform, SurfaceTexture surfaceTexture,long timestampNanos) {
+    private void handleFrameAvailable(float[] transform,long timestampNanos) {
         if (VERBOSE) Log.d(TAG, "handleFrameAvailable tr=" + transform);
         mVideoEncoder.drainEncoder(false);
-        mGLCanvas.drawSurfaceTexture(mBitmapTexture,surfaceTexture,0,0,480,480);
-      /*  GLPaint spaint = new GLPaint();
-        spaint.setColor(Color.BLUE);*/
-       /* mGLCanvas.drawRect(0,0,200,200,spaint);
-        mFullScreen.drawFrame(mTextureId, transform);*/
-        //drawBox(mFrameNum++);
-        //drawBitmap();
+
+        mFilterWrapper.drawFrame(mTextureId, mWidth, mHeight);
         mInputWindowSurface.setPresentationTime(timestampNanos);
         mInputWindowSurface.swapBuffers();
         if (mStartRecordTimeNanos == 0) {
@@ -389,25 +376,6 @@ public class TextureMovieEncoder implements Runnable {
         }
         mRecordTotalTimeNanos = timestampNanos - mStartRecordTimeNanos;
     }
-
-    int j = 0;
-
-   /* private void drawBitmap() {
-        Canvas canvas = new Canvas(mBitmap);
-        canvas.drawColor(Color.TRANSPARENT);
-        Paint paint = new Paint();
-        paint.setAntiAlias(true);                       //设置画笔为无锯齿
-        paint.setColor(Color.BLACK);                    //设置画笔颜色
-        paint.setStrokeWidth((float) 3.0);              //线宽
-        paint.setStyle(Paint.Style.STROKE);
-        Path path = new Path();                     //Path对象
-        if (j == 0){
-            path.moveTo(50, 100);
-        }else if(j<5){
-            path.lineTo((j+1)*50, 300);                           //连线到下一点
-        }
-        canvas.drawPath(path, paint);                   //绘制任意多边形
-    }*/
 
     /**
      * Handles a request to stop encoding.
@@ -418,25 +386,14 @@ public class TextureMovieEncoder implements Runnable {
         releaseEncoder();
     }
 
-    private Bitmap mBitmap;
-
     /**
      * Sets the texture name that SurfaceTexture will use when frames are received.
      */
     private void handleSetTexture(int id) {
         //Log.d(TAG, "handleSetTexture " + id);
-        mTextureId =  bindTexure(id);
+        mTextureId = id;
     }
 
-    private int bindTexure(int id) {
-        if (mBitmapTexture != null) return mBitmapTexture.getId();
-        if (mBitmap != null) mBitmap.recycle();
-        mBitmap = Bitmap.createBitmap(480,480, Bitmap.Config.ARGB_8888);
-        Canvas canvas = new Canvas();
-        canvas.drawColor(Color.WHITE);
-        mBitmapTexture =  mGLCanvas.bindBitmapToTexture(id,mBitmap);
-        return  mBitmapTexture.getId();
-    }
 
     /**
      * Tears down the EGL surface and context we've been using to feed the MediaCodec input
@@ -445,23 +402,21 @@ public class TextureMovieEncoder implements Runnable {
      * This is useful if the old context we were sharing with went away (maybe a GLSurfaceView
      * that got torn down) and we need to hook up with the new one.
      */
-    private void handleUpdateSharedContext(EGLContext newSharedContext) {
+    private void handleUpdateSharedContext(EGLContext newSharedContext,FilterWrapper aFilterWrapper) {
         Log.d(TAG, "handleUpdatedSharedContext " + newSharedContext);
 
         // Release the EGLSurface and EGLContext.
         mInputWindowSurface.releaseEglSurface();
-        mFullScreen.release(false);
         mEglCore.release();
 
         // Create a new EGLContext and recreate the window surface.
         mEglCore = new EglCore(newSharedContext, EglCore.FLAG_RECORDABLE);
         mInputWindowSurface.recreate(mEglCore);
         mInputWindowSurface.makeCurrent();
-
-        // Create new programs and such for the new context.
-       /* mFullScreen = new FullFrameRect(
-                new Texture2dProgram(Texture2dProgram.ProgramType.TEXTURE_EXT));*/
-        //mGLCanvas = new CanvasGL();
+        if (aFilterWrapper != mFilterWrapper && mFilterWrapper != null){
+            mFilterWrapper.destory();
+        }
+        mFilterWrapper = aFilterWrapper;
     }
 
     private void prepareEncoder(EGLContext sharedContext, int width, int height, int bitRate,
@@ -474,10 +429,8 @@ public class TextureMovieEncoder implements Runnable {
         mEglCore = new EglCore(sharedContext, EglCore.FLAG_RECORDABLE);
         mInputWindowSurface = new WindowSurface(mEglCore, mVideoEncoder.getInputSurface(), true);
         mInputWindowSurface.makeCurrent();
-       /* mFullScreen = new FullFrameRect(
-                new Texture2dProgram(Texture2dProgram.ProgramType.TEXTURE_EXT));*/
-        mGLCanvas = new CanvasGL();
-
+        mWidth = width;
+        mHeight = height;
     }
 
     private void releaseEncoder() {
@@ -486,14 +439,15 @@ public class TextureMovieEncoder implements Runnable {
             mInputWindowSurface.release();
             mInputWindowSurface = null;
         }
-        if (mFullScreen != null) {
-            mFullScreen.release(false);
-            mFullScreen = null;
-        }
         if (mEglCore != null) {
             mEglCore.release();
             mEglCore = null;
         }
+        if (null != mFilterWrapper) {
+            mFilterWrapper.destory();
+            mFilterWrapper = null;
+        }
+
     }
     int i = 0;
     /**
@@ -534,4 +488,5 @@ public class TextureMovieEncoder implements Runnable {
             mPause = true;
         }
     }
+
 }

@@ -20,6 +20,9 @@ import java.util.List;
 
 import demo.recorder.ui.CameraPreview;
 
+import static jp.co.cyberagent.android.gpuimage.GPUFilterType.FILTER_GPUIMAGE_MASK;
+import static jp.co.cyberagent.android.gpuimage.GPUFilterType.FILTER_NONE;
+
 /** 
  * description: A service to generate media file(support video and audio only)
  * create by: leiap
@@ -76,12 +79,12 @@ public class MediaRecordService implements OnRecordStatusChangedListener {
     }
 
     private void initVideoCore(CameraPreview cameraPreview) {
-        mVideoRecordCore = new VideoRecordCore();
+        mVideoRecordCore = new VideoRecordCore(FILTER_GPUIMAGE_MASK,FILTER_GPUIMAGE_MASK);
         mVideoRecordCore.bindPreview(cameraPreview);
         mVideoRecordCore.setCameraHandler(new VideoRecordCore.CameraHandler(mVideoRecordCore));
         mVideoRecordCore.setOnRecordStatusChangedListener(this);
         mVideoRecordCore.configOutputFile(new File(recordVideo));
-        mVideoRecordCore.configRecordQualityType(VideoRecordCore.QUALITY_HIGH);
+        mVideoRecordCore.configRecordQualityType(VideoRecordCore.QUALITY_NORMAL_HIGH);
         mVideoRecordCore.configRecordSize(480, 480);
         mVideoRecordCore.configIntervalNotifyRecordProcessing(1000);
     }

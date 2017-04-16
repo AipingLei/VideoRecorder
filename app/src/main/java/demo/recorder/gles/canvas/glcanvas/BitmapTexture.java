@@ -21,8 +21,11 @@
 package demo.recorder.gles.canvas.glcanvas;
 
 import android.graphics.Bitmap;
+import android.opengl.GLES11Ext;
 
 import junit.framework.Assert;
+
+import javax.microedition.khronos.opengles.GL11;
 
 // BitmapTexture is a secondBitmap whose content is specified by a fixed Bitmap.
 //
@@ -55,4 +58,9 @@ public class BitmapTexture extends UploadedTexture {
     public Bitmap getBitmap() {
         return mContentBitmap;
     }
+
+    public int getTarget() {
+        return  GLES11Ext.GL_TEXTURE_EXTERNAL_OES;
+    }
+
 }
