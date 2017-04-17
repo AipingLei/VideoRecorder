@@ -142,7 +142,6 @@ public class CameraCaptureActivity extends Activity {
 
     private boolean isRecord = false;
 
-    /** 点击屏幕录制 */
     private View.OnTouchListener mOnVideoControllerTouchListener = new View.OnTouchListener() {
 
         @Override
@@ -159,11 +158,10 @@ public class CameraCaptureActivity extends Activity {
                     boolean sRecord = !isRecord;
                     if (sRecord){
                         mediaRecordService.startRecord();
-                        mRecordButton.setBackgroundResource(R.drawable.squarecamera__camera_snap_selected);
+                        mRecordButton.setBackgroundResource(R.drawable.squarecamera__camera_snap_unselected);
                         Toast.makeText(CameraCaptureActivity.this,"start recording!",Toast.LENGTH_LONG).show();
                     }else {
-                        // 暂停
-                        mRecordButton.setBackgroundResource(R.drawable.squarecamera__camera_snap_unselected);
+                        mRecordButton.setBackgroundResource(R.drawable.squarecamera__camera_snap_selected);
                         mediaRecordService.stopRecord();
                         Toast.makeText(CameraCaptureActivity.this,"stop recording!",Toast.LENGTH_LONG).show();
                     }

@@ -317,4 +317,26 @@ public class StringUtils {
 	public static String makeSafe(String s) {
 		return (s == null) ? "" : s;
 	}
+
+	/**
+	 * define the status by 2 bit
+	 * the 1st bit value equals 1 means need change to a target status
+	 * the 2nd bit value equals 1 means has switched to the target status
+	 */
+
+	public static boolean equalsStatusSwitched(int aTagertStatus, int aStatus){
+		boolean isSwitched =   (1 & aStatus) == 1;
+		if (isSwitched) return aStatus >> aTagertStatus == 1;
+		return  false;
+	}
+
+	public static boolean equalsStatus(int aTagertStatus, int aStatus){
+		return aStatus >> aTagertStatus == 1;
+	}
+
+	public int getStatus(int aTagertStatus,boolean isSwitched){
+		if (isSwitched) return  (1 << aTagertStatus)|1;
+		return 1 << aTagertStatus;
+	}
+
 }

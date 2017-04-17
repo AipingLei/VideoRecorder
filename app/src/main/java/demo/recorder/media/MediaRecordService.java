@@ -21,6 +21,7 @@ import java.util.List;
 import demo.recorder.ui.CameraPreview;
 
 import static jp.co.cyberagent.android.gpuimage.GPUFilterType.FILTER_GPUIMAGE_MASK;
+import static jp.co.cyberagent.android.gpuimage.GPUFilterType.FILTER_NONE;
 
 /** 
  * description: A service to generate media file(support video and audio only)
@@ -33,13 +34,6 @@ public class MediaRecordService implements OnRecordStatusChangedListener {
 
     private static final String TAG = "MediaRecordService";
 
-    private static final boolean VERBOSE = false;
-
-    protected static final int RECORDING_OFF = 0;
-    protected static final int RECORDING_ON = 1;
-    protected static final int RECORDING_RESUMED = 2;
-
-    private File mCacheDir;
 
     private VideoRecordCore mVideoRecordCore;
 
@@ -78,13 +72,13 @@ public class MediaRecordService implements OnRecordStatusChangedListener {
     }
 
     private void initVideoCore(CameraPreview cameraPreview) {
-        mVideoRecordCore = new VideoRecordCore(FILTER_GPUIMAGE_MASK,FILTER_GPUIMAGE_MASK);
+        mVideoRecordCore = new VideoRecordCore(FILTER_NONE,FILTER_GPUIMAGE_MASK);
         mVideoRecordCore.bindPreview(cameraPreview);
         mVideoRecordCore.setCameraHandler(new VideoRecordCore.CameraHandler(mVideoRecordCore));
         mVideoRecordCore.setOnRecordStatusChangedListener(this);
         mVideoRecordCore.configOutputFile(new File(recordVideo));
         mVideoRecordCore.configRecordQualityType(VideoRecordCore.QUALITY_NORMAL_HIGH);
-        mVideoRecordCore.configRecordSize(960, 960);
+        mVideoRecordCore.configRecordSize(1080, 1080);
         mVideoRecordCore.configIntervalNotifyRecordProcessing(1000);
     }
 
@@ -95,25 +89,19 @@ public class MediaRecordService implements OnRecordStatusChangedListener {
 
 
     public void startRecord() {
-        mVideoRecordCore.changeRecordingState(true);
+        mVideoRecordCore.changeRecordingState(VideoRecordCore.RECORDING_START);
     }
 
     public void stopRecord() {
-        mVideoRecordCore.changeRecordingState(false);
+        mVideoRecordCore.changeRecordingState(VideoRecordCore.RECORDING_STOP);
     }
 
-    /**
-     * 暂停录制
-     */
     public void pauseRecord() {
-        mVideoRecordCore.changePauseState(true);
+        mVideoRecordCore.changeRecordingState(VideoRecordCore.RECORDING_PAUSE);
     }
 
-    /**
-     * 恢复录制
-     */
     public void resumeRecord() {
-        mVideoRecordCore.changePauseState(false);
+        mVideoRecordCore.changeRecordingState(VideoRecordCore.RECORDING_RESUME);
     }
 
 
@@ -136,6 +124,7 @@ public class MediaRecordService implements OnRecordStatusChangedListener {
         mVideoRecordCore.openCamera(480, 480);      // updates mCameraPreviewWidth/Height
     }
     public void destroy() {
+        mVideoRecordCore.destroy();
         //mCameraHandler.invalidateHandler();     // paranoia
     }
 
@@ -174,12 +163,9 @@ public class MediaRecordService implements OnRecordStatusChangedListener {
     @Override
     public void onRecordResume(long curRecoredTime) {
         Log.d("TAG2", "onRecordResume：" + curRecoredTime);
-
-        // 恢复录音
         if (enableAudioRecord) {
             audioRecorderWrapper.resumeRecord();
         }
-
         mRecordTime = curRecoredTime;
     }
 

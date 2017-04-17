@@ -134,7 +134,7 @@ public class CameraUtils {
 
     static final int PREVIEW_SIZE_BEST_WIDTH = 1080; // 预览最优值
     static final int PREVIEW_SIZE_MAX_WIDTH = 1280; // 预览最大宽度
-    static final int PREVIEW_SIZE_MIN_WIDTH = 240; // 预览最小宽度
+    static final int PREVIEW_SIZE_MIN_WIDTH = 1080; // 预览最小宽度
 
     /**
      * 根据摄像头支持的所有预览参数

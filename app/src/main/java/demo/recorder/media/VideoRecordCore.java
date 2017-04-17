@@ -1,8 +1,6 @@
 package demo.recorder.media;
 
 import android.app.Activity;
-import android.content.Context;
-import android.graphics.Point;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
 import android.opengl.EGL14;
@@ -10,7 +8,6 @@ import android.opengl.GLES20;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
-import android.view.WindowManager;
 
 import java.io.File;
 import java.io.IOException;
@@ -24,11 +21,7 @@ import demo.recorder.TextureMovieEncoder;
 import demo.recorder.ui.CameraPreview;
 import jp.co.cyberagent.android.gpuimage.GPUFilterType;
 import jp.co.cyberagent.android.gpuimage.filter.FilterWrapper;
-import jp.co.cyberagent.android.gpuimage.filter.MagicCameraInputFilter;
 
-import static demo.recorder.media.MediaRecordService.RECORDING_OFF;
-import static demo.recorder.media.MediaRecordService.RECORDING_ON;
-import static demo.recorder.media.MediaRecordService.RECORDING_RESUMED;
 
 /** 
  * description: describe the class
@@ -51,7 +44,11 @@ public class VideoRecordCore implements TexureObserver,SurfaceTexture.OnFrameAva
      */
     private int mRecordWidth,mRecordHeight;
     private File mOutputFile;
-    private boolean mRecordingEnabled;
+    /**
+     * define the video recording process is running or not
+     */
+    //private boolean isRunning;
+
     private int mRecordQualityType;
     protected OnRecordStatusChangedListener mOnRecordStatusChangedListener;
     /**
@@ -67,20 +64,28 @@ public class VideoRecordCore implements TexureObserver,SurfaceTexture.OnFrameAva
      * record control
      */
     private int mFrameCount;
-    private boolean mIsNotifiedPause;
-    private boolean mPauseEnabled;
-    private int mRecordingStatus;
+    //private boolean mIsNotifiedPause;
+    //private boolean mPauseEnabled;
+
+    protected static final int RECORDING_IDEL = 0;
+    protected static final int RECORDING_START= 1;
+    protected static final int RECORDING_STARTED = 2;
+    protected static final int RECORDING_RESUME = 3;
+    protected static final int RECORDING_RESUMED = 4;
+    protected static final int RECORDING_PAUSE = 5;
+    protected static final int RECORDING_PAUSED = 6;
+    protected static final int RECORDING_STOP = 7;
+    protected static final int RECORDING_STOPPED = 8;
+
+    private int mRecordingState = RECORDING_IDEL;
     private long mCurTimeCalcRecordTime;
     private long mLastTimeCalcRecordTime;
     protected int mIntervalNotifyRecordProcessing = 1000;
 
-    private int mDisplayOrientation;
-    private boolean mFlipHorizontal;
-    private boolean mFlipVertical;
 
     public VideoRecordCore(GPUFilterType aDisplayFilterType,GPUFilterType aReocordFilterType) {
         this.mDisplayFilterType = aDisplayFilterType;
-        this.mReocordFilterType = aReocordFilterType;
+        this.mRecordFilterType = aReocordFilterType;
         mVideoEncoder = new TextureMovieEncoder();
     }
 
@@ -137,24 +142,26 @@ public class VideoRecordCore implements TexureObserver,SurfaceTexture.OnFrameAva
          * init camera params
          */
         Camera.Parameters parms = mCamera.getParameters();
+
+
         Camera.Size size = CameraUtils.determineBestPreviewSize(mCameraPreview.getContext(),parms,info.orientation);
-        parms.setPreviewSize(size.width, size.height);
+        //parms.setPreviewSize(size.width, size.height);
         CameraUtils.setCameraDisplayOrientation((Activity)mCameraPreview.getContext(),id,mCamera);
-        // 设置聚焦
+
         List<String> supportedFocusModes = parms.getSupportedFocusModes();
         if (supportedFocusModes != null && supportedFocusModes.contains(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO)) {
-            // 开启连续对焦功能
             parms.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO);
         }
         // Give the camera a hint that we're recording video.  This can have a big
         // impact on frame rate.
         parms.setRecordingHint(true);
+        parms.setPreviewSize(1080,1440);
         // leave the frame rate set to default
         mCamera.setParameters(parms);
         // setCameraDisplayOrientation(this,id,mCamera);
         Camera.Size mCameraPreviewSize = parms.getPreviewSize();
-        mDisplayWidth = mCameraPreviewSize.height;
-        mDisplayHeight = mCameraPreviewSize.width;
+        mDisplayWidth = mCameraPreviewSize.width;
+        mDisplayHeight = mCameraPreviewSize.height;
         mCameraPreview.queueEvent(new Runnable() {
             @Override public void run() {
                 mCameraPreview.setCameraPreviewSize(mDisplayWidth, mDisplayHeight);
@@ -199,18 +206,18 @@ public class VideoRecordCore implements TexureObserver,SurfaceTexture.OnFrameAva
         releaseCamera();
     }
 
-    private Handler mCameraHandler;
+    private CameraHandler mCameraHandler;
     @Override
     public void onSurfaceCreated(SurfaceTexture aSurfaceTexture) {
         // Tell the UI thread to enable the camera preview.
         mCameraHandler.sendMessage(mCameraHandler.obtainMessage(
                 VideoRecordCore.CameraHandler.MSG_SET_SURFACE_TEXTURE, aSurfaceTexture));
-        mRecordingEnabled = mVideoEncoder.isRecording();
-        if (mRecordingEnabled) {
-            mRecordingStatus = RECORDING_RESUMED;
+      /*  isRunning = mVideoEncoder.isRecording();
+        if (isRunning) {
+            mRecordingStatus = RECORDING_RESUME;
         }else {
             mRecordingStatus = RECORDING_OFF;
-        }
+        }*/
         initFilterParam();
     }
 
@@ -221,20 +228,44 @@ public class VideoRecordCore implements TexureObserver,SurfaceTexture.OnFrameAva
 
 
     @Override
-    public void onDrawFrame(SurfaceTexture aSurfaceTexture, int aTexureID) {
-        handleRecordEvent(aSurfaceTexture,aTexureID);
+    public void onDrawFrame(SurfaceTexture aSurfaceTexture, int aTextureID) {
+        handleRecordEvent(aSurfaceTexture,aTextureID);
     }
 
-    public void changeRecordingState(final boolean isRecording) {
-        if (null == mOutputFile) {
-            throw new IllegalStateException();
-        }
-        if (mRecordingEnabled == isRecording) return;
+    public void changeRecordingState(final int aState){
+        if (null == mOutputFile) throw new IllegalStateException();
+        if (this.mRecordingState == aState) return;
         mCameraPreview.queueEvent(new Runnable() {
             @Override
             public void run() {
-                Log.d("TAG", "SurfaceRenderer changeRecordingState: was " + mRecordingEnabled + " now " + isRecording);
-                mRecordingEnabled = isRecording;
+                Log.d("TAG", "changeRecordingState: was " + VideoRecordCore.this.mRecordingState + " now " + aState);
+                mRecordingState = aState;
+            }
+        });
+    }
+
+    public void destroy() {
+        releaseCamera();
+        stopRecording();
+        if (mCameraHandler != null){
+            mCameraHandler.invalidateHandler();
+        }
+    }
+
+    /*public boolean isRecordingDisable(int aRecordingState) {
+        return aRecordingState != RECORDING_RESUMED && aRecordingState != RECORDING_STARTED ;
+    }*/
+
+    /*public void changeRecordingState(final boolean isRecording) {
+        if (null == mOutputFile) {
+            throw new IllegalStateException();
+        }
+        if (this.isRunning == isRecording) return;
+        mCameraPreview.queueEvent(new Runnable() {
+            @Override
+            public void run() {
+                Log.d("TAG", "SurfaceRenderer changeRecordingState: was " + VideoRecordCore.this.isRunning + " now " + isRecording);
+                VideoRecordCore.this.isRunning = isRecording;
             }
         });
     }
@@ -247,7 +278,7 @@ public class VideoRecordCore implements TexureObserver,SurfaceTexture.OnFrameAva
                 mPauseEnabled = isPause;
             }
         });
-    }
+    }*/
 
     /**
      * Handles camera operation requests from other threads.  Necessary because the Camera
@@ -263,7 +294,7 @@ public class VideoRecordCore implements TexureObserver,SurfaceTexture.OnFrameAva
         private WeakReference<VideoRecordCore> mVideoRecordCore;
 
         public CameraHandler(VideoRecordCore aVideoRecordCore) {
-            mVideoRecordCore = new WeakReference<VideoRecordCore>(aVideoRecordCore);
+            mVideoRecordCore = new WeakReference<>(aVideoRecordCore);
         }
 
         /**
@@ -296,57 +327,54 @@ public class VideoRecordCore implements TexureObserver,SurfaceTexture.OnFrameAva
     }
 
     /**
-     * description: handle the record event
+     * description: Handle the record event, this method is kinda weird
+     * because the video should only run after the first SurfaceTexture is
+     * drawing, besides,the encoder need to know the textureID which to share.
      * params:
      * @return :
      * create by: leiap
      * update date: 2017/4/13
      */
     public void handleRecordEvent(SurfaceTexture aSurfaceTexture,int aTextureID) {
-
-        if (mRecordingEnabled) {
-            switch (mRecordingStatus) {
-                case RECORDING_OFF:
-                    startRecording(aTextureID);
-                    break;
-                case RECORDING_RESUMED:
-                    resumeRecording();
-                    break;
-                case RECORDING_ON:
-                    break;
-                default:
-                    throw new RuntimeException(TAG+"unknow mRecordingStatus: " + mRecordingStatus);
-            }
-            pauseOnRecorder(aSurfaceTexture);
-        }else {
-            switch (mRecordingStatus) {
-                case RECORDING_ON:
-                case RECORDING_RESUMED:
-                    Log.d(TAG, " stop recording");
-                    stopRecordTodo();
-                    // 刷新录制状态
-                    mRecordingStatus = RECORDING_OFF;
-                    break;
-                case RECORDING_OFF:
-                    break;
-                default:
-                    throw new RuntimeException(TAG+"unknow mRecordingStatus: " + mRecordingStatus);
-            }
+        switch (mRecordingState){
+            case RECORDING_START:
+                startRecording(aTextureID);
+            case RECORDING_RESUME:
+                resumeRecording();
+                break;
+            case RECORDING_PAUSE:
+                pauseRecording();
+                break;
+            case RECORDING_STOP:
+                stopRecording();
+                break;
+            default:
+                break;
         }
+        handleRecording(aSurfaceTexture);
     }
 
 
     private void resumeRecording() {
-        mVideoEncoder.updateSharedContext(EGL14.eglGetCurrentContext(),createFilterWrapper(mReocordFilterType,mRecordWidth,mRecordHeight));
-        mRecordingStatus = RECORDING_ON;
-        if(null != mOnRecordStatusChangedListener && mRecordingEnabled)
-        {
+        if (mRecordingState != RECORDING_RESUME) return;
+        mVideoEncoder.updateSharedContext(EGL14.eglGetCurrentContext(),createFilterWrapper(mRecordFilterType,mRecordWidth,mRecordHeight));
+        mRecordingState = RECORDING_RESUMED;
+        if(null != mOnRecordStatusChangedListener) {
             long recordTime = mVideoEncoder.getRecordedTimeNanos() / 1000000; // 将时间转换为毫秒
-            mOnRecordStatusChangedListener.onRecordResume( recordTime);
+            mOnRecordStatusChangedListener.onRecordResume(recordTime);
+            // 暂停恢复以后的录制时长发生了变化
+            mCurTimeCalcRecordTime = System.currentTimeMillis();
+            if (mCurTimeCalcRecordTime - mLastTimeCalcRecordTime >= mIntervalNotifyRecordProcessing) {
+                mLastTimeCalcRecordTime = mCurTimeCalcRecordTime;
+                // 回调processing
+                mOnRecordStatusChangedListener.onRecordProcessing(recordTime);
+            }
         }
+        mRecordingState = RECORDING_RESUMED;
     }
 
     private void startRecording(int textureID) {
+        if (mRecordingState != RECORDING_START) return;
         Log.d(TAG, "start recording");
         // fps
         int tmpFPS = 25;
@@ -362,11 +390,35 @@ public class VideoRecordCore implements TexureObserver,SurfaceTexture.OnFrameAva
         // current implementation it has to happen after the video encoder is started, so
         // we just do it here.
         mVideoEncoder.setTextureId(textureID);
-        mRecordingStatus = RECORDING_ON;
+        mRecordingState = RECORDING_STARTED;
         // notify the Listener
         if (null != mOnRecordStatusChangedListener) {
             mOnRecordStatusChangedListener.onRecordStart();
         }
+    }
+
+    private void pauseRecording() {
+        if (mRecordingState != RECORDING_PAUSE) return;
+        mVideoEncoder.pause();
+        Log.d("TAG", "SurfaceRenderer 暂停录制");
+        if (null != mOnRecordStatusChangedListener) {
+            long recordTime = mVideoEncoder.getRecordedTimeNanos() / 1000000; // 将时间转换为毫秒
+            mOnRecordStatusChangedListener.onRecordPaused(recordTime);
+        }
+        mRecordingState = RECORDING_PAUSED;
+    }
+
+    public void stopRecording() {
+        final long recordTime = mVideoEncoder.getRecordedTimeNanos() / 1000000;
+        mVideoEncoder.stopRecording(new TextureMovieEncoder.OnStopOverListener() {
+            @Override
+            public void onStopOver() {
+                if (null != mOnRecordStatusChangedListener) {
+                    mOnRecordStatusChangedListener.onRecordStop(mOutputFile, recordTime);
+                }
+            }
+        });
+        mRecordingState = RECORDING_STOPPED;
     }
 
 
@@ -401,77 +453,22 @@ public class VideoRecordCore implements TexureObserver,SurfaceTexture.OnFrameAva
         return qualityParam;
     }
 
-    /**
-     * 录制视频中暂停和恢复
-     * @param aSurfaceTexture
-     */
-    public void pauseOnRecorder(SurfaceTexture aSurfaceTexture) {
-        if (mPauseEnabled) {
-            pauseTodo() ;
-            return;
-        }
-        // 通知过暂停
-        if (mIsNotifiedPause) {
-            Log.d("TAG", "SurfaceRenderer 恢复录制");
-            mVideoEncoder.updateSharedContext(EGL14.eglGetCurrentContext(),createFilterWrapper(mReocordFilterType,mRecordWidth,mRecordHeight));
-        }
+
+    private void handleRecording(SurfaceTexture aSurfaceTexture) {
+        if (mRecordingState != RECORDING_STARTED && mRecordingState != RECORDING_RESUMED) return;
+
         // Tell the video encoder thread that a new frame is available.
         // This will be ignored if we're not actually recording.
         mVideoEncoder.frameAvailable(aSurfaceTexture);
-
-        if (null != mOnRecordStatusChangedListener) {
-            // 通知过暂停
-            if (mIsNotifiedPause) {
-                // 得到当前录制时长，将时间转换为毫秒
-                long recordTime = mVideoEncoder.getRecordedTimeNanos() / 1000000;
-                // 回调resume
-                mOnRecordStatusChangedListener.onRecordResume(recordTime);
-            }
-
-            // 暂停恢复以后的录制时长发生了变化
-            mCurTimeCalcRecordTime = System.currentTimeMillis();
-            if (mCurTimeCalcRecordTime - mLastTimeCalcRecordTime >= mIntervalNotifyRecordProcessing) {
-                mLastTimeCalcRecordTime = mCurTimeCalcRecordTime;
-                // 得到当前录制时长，将时间转换为毫秒
-                long recordTime = mVideoEncoder.getRecordedTimeNanos() / 1000000;
-                // 回调processing
-                mOnRecordStatusChangedListener.onRecordProcessing(recordTime);
-            }
-
-        }
-        mIsNotifiedPause = false;
     }
 
-    public void setCameraHandler(Handler mCameraHandler) {
+    public void setCameraHandler(CameraHandler mCameraHandler) {
         this.mCameraHandler = mCameraHandler;
     }
 
 
-    /**
-     * 设置录制监听器
-     *
-     * @param listener
-     */
     public void setOnRecordStatusChangedListener(OnRecordStatusChangedListener listener) {
         this.mOnRecordStatusChangedListener = listener;
-    }
-
-    /**
-     * 暂停以后要做的事
-     */
-    private void pauseTodo(){
-        // 没有通知过暂停
-        if (!mIsNotifiedPause) {
-            // 暂停编码
-            mVideoEncoder.pause();
-            Log.d("TAG", "SurfaceRenderer 暂停录制");
-
-            if (null != mOnRecordStatusChangedListener) {
-                long recordTime = mVideoEncoder.getRecordedTimeNanos() / 1000000; // 将时间转换为毫秒
-                mOnRecordStatusChangedListener.onRecordPaused(recordTime);
-                mIsNotifiedPause = true;
-            }
-        }
     }
 
     private void drawTestBox() {
@@ -482,63 +479,23 @@ public class VideoRecordCore implements TexureObserver,SurfaceTexture.OnFrameAva
         GLES20.glDisable(GLES20.GL_SCISSOR_TEST);
     }
 
-    /**
-     * 停止录制以后需要做的事
-     */
-    public void stopRecordTodo() {
-        // 得到当前录制时长，将时间转换为毫秒
-        final long recordTime = mVideoEncoder.getRecordedTimeNanos() / 1000000;
-        // 停止录制并且回调对应函数
-        mVideoEncoder.stopRecording(new TextureMovieEncoder.OnStopOverListener() {
-
-            @Override
-            public void onStopOver() {
-                if (null != mOnRecordStatusChangedListener) {
-                    mOnRecordStatusChangedListener.onRecordStop(mOutputFile, recordTime);
-                }
-            }
-        });
-    }
-
-    /**
-     * 配置录制质量，质量越高，画面越清晰，文件越大
-     *
-     * @param type
-     */
     public void configRecordQualityType(int type) {
         this.mRecordQualityType = type;
     }
 
-    /**
-     * 配置录制尺寸
-     *
-     * @param recordWidth
-     * @param recordHeight
-     */
     public void configRecordSize(int recordWidth, int recordHeight) {
         this.mRecordWidth = recordWidth;
         this.mRecordHeight = recordHeight;
     }
 
-    /**
-     * 配置输出文件
-     *
-     * @param outputFile
-     */
     public void configOutputFile(File outputFile) {
         this.mOutputFile = outputFile;
     }
 
-    /**
-     * 配置通知录制进度间隔时间，单位：毫秒
-     *
-     * @param interval
-     */
     public void configIntervalNotifyRecordProcessing(int interval) {
         this.mIntervalNotifyRecordProcessing = interval;
     }
 
-    private MagicCameraInputFilter mCameraInputFilter;
     /**
      * the filter for displaying by camera preview
      */
@@ -546,15 +503,15 @@ public class VideoRecordCore implements TexureObserver,SurfaceTexture.OnFrameAva
     /**
      * the filter for recording by movie encoder
      */
-    private GPUFilterType mReocordFilterType;
+    private GPUFilterType mRecordFilterType;
 
     private void initFilterParam(){
-        mVideoEncoder.setFilterWrapper(createFilterWrapper(mReocordFilterType,mRecordWidth,mRecordHeight));
+        mVideoEncoder.setFilterWrapper(createFilterWrapper(mRecordFilterType,mRecordWidth,mRecordHeight));
         mCameraPreview.setFilterWrapper(createFilterWrapper(mDisplayFilterType,mDisplayWidth,mDisplayHeight));
     }
 
     private FilterWrapper createFilterWrapper(GPUFilterType aFilterType,int width,int height){
-        FilterWrapper sFilterWrapper = FilterWrapper.buildFilterWrapper(aFilterType,mDisplayOrientation,false,false);
+        FilterWrapper sFilterWrapper = FilterWrapper.buildFilterWrapper(aFilterType,0,false,false);
         sFilterWrapper.initFilter();
         sFilterWrapper.onOutpuSizeChanged(width, height);
         sFilterWrapper.onSurfaceSizeChanged(width, height);

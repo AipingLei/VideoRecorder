@@ -10,6 +10,7 @@ import java.io.File;
  * version: 1.0
 */
 public interface OnRecordStatusChangedListener {
+
     void onRecordStart();
 
     void onRecordPaused(long curRecoredTime);
