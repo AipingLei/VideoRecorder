@@ -8,9 +8,9 @@ import android.os.Build;
 import android.util.Log;
 import android.widget.Toast;
 
-import com.blue.librecord.muxer.FFmpegMuxer;
-import com.blue.librecord.recorder.audio.AudioRecorderWrapper;
-import com.blue.librecord.recorder.audio.PCMDenoiser;
+import demo.recorder.util.FFmpegMuxer;
+import demo.recorder.media.audio.AudioRecorderWrapper;
+import demo.recorder.media.audio.PCMDenoiser;
 import com.iflytek.codec.ffmpeg.encoder.M4AEncoder;
 import com.iflytek.codec.ffmpeg.encoder.MP4EncoderSoftware;
 
@@ -21,7 +21,6 @@ import java.util.List;
 import demo.recorder.ui.CameraPreview;
 
 import static jp.co.cyberagent.android.gpuimage.GPUFilterType.FILTER_GPUIMAGE_MASK;
-import static jp.co.cyberagent.android.gpuimage.GPUFilterType.FILTER_NONE;
 
 /** 
  * description: A service to generate media file(support video and audio only)
@@ -134,22 +133,6 @@ public class MediaRecordService implements OnRecordStatusChangedListener {
     }
 
     public void resume(){
-      /*  updateControls();
-        openCamera(1280, 720);      // updates mCameraPreviewWidth/Height
-
-        // Set the preview aspect ratio.
-        AspectFrameLayout layout = (AspectFrameLayout) findViewById(R.id.cameraPreview_afl);
-        layout.setAspectRatio((double) mCameraPreviewWidth / mCameraPreviewHeight);
-
-        mGLView.onResume();
-        mGLView.queueEvent(new Runnable() {
-            @Override
-            public void run() {
-                mRenderer.setCameraPreviewSize(mCameraPreviewWidth, mCameraPreviewHeight);
-            }
-        });
-        Log.d(TAG, "onResume complete: " + this);*/
-
         mVideoRecordCore.openCamera(480, 480);      // updates mCameraPreviewWidth/Height
     }
     public void destroy() {
@@ -280,7 +263,7 @@ public class MediaRecordService implements OnRecordStatusChangedListener {
 
             @Override
             public void run() {
-                final ProgressDialog dialog = ProgressDialog.show(mContext, "", "正在进行合成视频");
+                final ProgressDialog dialog = ProgressDialog.show(mContext, "", "video encoding!");
                 dialog.setCancelable(false);
 
                 new Thread() {
@@ -291,14 +274,14 @@ public class MediaRecordService implements OnRecordStatusChangedListener {
 
                             @Override
                             public void onEncodeSuccess(File encodedFile) {
-                                showMessage("音频编码完成，准备合成");
+                                showMessage("video encoding success，prepare for mix");
 
                                 boolean result = FFmpegMuxer.muxerMP4(mp4InputFile, false, encodedFile.getAbsolutePath(), outMP4File);
 
                                 if (result) {
-                                    showMessage("视频合成成功，文件保存在：" + outMP4File);
+                                    showMessage("mix success，the file is in：" + outMP4File);
                                 } else {
-                                    showMessage("视频合成失败");
+                                    showMessage("mix failed");
                                 }
                                 dialog.dismiss();
                             }
@@ -314,7 +297,7 @@ public class MediaRecordService implements OnRecordStatusChangedListener {
 
                             @Override
                             public void onEncodeFailed(int percent) {
-                                showMessage("音频编码失败，已完成：" + percent);
+                                showMessage("audio encoding failed，percent：" + percent);
                                 dialog.dismiss();
                             }
                         });

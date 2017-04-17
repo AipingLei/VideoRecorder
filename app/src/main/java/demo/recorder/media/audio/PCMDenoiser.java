@@ -1,4 +1,4 @@
-package com.blue.librecord.recorder.audio;
+package demo.recorder.media.audio;
 
 import com.iflytek.codec.ffmpeg.encoder.MP4EncoderSoftware;
 import com.iflytek.lib.libspeex.SpeexWrapper;

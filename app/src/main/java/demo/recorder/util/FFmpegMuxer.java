@@ -1,4 +1,4 @@
-package com.blue.librecord.muxer;
+package demo.recorder.util;
 
 import com.iflytek.codec.ffmpeg.FFmpegCommondHelper;
 

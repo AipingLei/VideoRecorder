@@ -1,4 +1,4 @@
-package com.blue.librecord.recorder.audio;
+package demo.recorder.media.audio;
 
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;

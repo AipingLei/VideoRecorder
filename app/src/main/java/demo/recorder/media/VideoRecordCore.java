@@ -72,14 +72,8 @@ public class VideoRecordCore implements TexureObserver,SurfaceTexture.OnFrameAva
     private int mRecordingStatus;
     private long mCurTimeCalcRecordTime;
     private long mLastTimeCalcRecordTime;
-    /**
-     * 通知录制进度间隔时间，单位：毫秒
-     */
     protected int mIntervalNotifyRecordProcessing = 1000;
 
-    /**
-     * 显示的旋转角度
-     */
     private int mDisplayOrientation;
     private boolean mFlipHorizontal;
     private boolean mFlipVertical;

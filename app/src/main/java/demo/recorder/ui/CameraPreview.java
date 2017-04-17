@@ -1,7 +1,6 @@
 package demo.recorder.ui;
 
 import android.content.Context;
-import android.graphics.PixelFormat;
 import android.graphics.SurfaceTexture;
 import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
@@ -10,11 +9,11 @@ import android.util.AttributeSet;
 import android.util.Log;
 
 
-import com.blue.librecord.recorder.gles.GlUtil;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
+import demo.recorder.gles.GlUtil;
 import demo.recorder.media.TexureObserver;
 import jp.co.cyberagent.android.gpuimage.filter.FilterWrapper;
 import jp.co.cyberagent.android.gpuimage.filter.MagicCameraInputFilter;
