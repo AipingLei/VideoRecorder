@@ -38,6 +38,7 @@ public class MediaRecordService implements OnRecordStatusChangedListener {
     private VideoRecordCore mVideoRecordCore;
 
     List<MediaObject> mMediaList;
+
     private long mRecordTime;
 
 
@@ -65,9 +66,9 @@ public class MediaRecordService implements OnRecordStatusChangedListener {
         }
         String sBasePath = dir.getAbsolutePath()+File.separator;
 
-        recordVideo =sBasePath+"record.mp4";
-        recordAudio =sBasePath+"record.pcm";
-        recordAudioDenoise = sBasePath+"record.pcm_.denoise";
+        recordVideo =sBasePath+"handleRecordEvent.mp4";
+        recordAudio =sBasePath+"handleRecordEvent.pcm";
+        recordAudioDenoise = sBasePath+"handleRecordEvent.pcm_.denoise";
         finalFile = sBasePath+"recordFinal.mp4";
     }
 
@@ -293,11 +294,6 @@ public class MediaRecordService implements OnRecordStatusChangedListener {
         });
     }
 
-    /**
-     * 当前系统是否可以使用视频录制
-     *
-     * @return
-     */
     public static final boolean isCanUseInCurrentSystem() {
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2;
     }
@@ -312,7 +308,9 @@ public class MediaRecordService implements OnRecordStatusChangedListener {
         });
     }
 
-
+    public long getRecordTime() {
+        return mVideoRecordCore.getReocordTime();
+    }
 
 
 }

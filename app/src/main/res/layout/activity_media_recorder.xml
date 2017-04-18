@@ -55,7 +55,7 @@
     </RelativeLayout>
 
     <!--
-        <com.yixia.camera.demo.ui.record.views.ProgressView
+        <com.yixia.camera.demo.ui.handleRecordEvent.views.ProgressView
             android:id="@+id/record_progress"
             android:layout_width="match_parent"
             android:layout_height="5dp"
@@ -68,7 +68,14 @@
         android:layout_below="@+id/title_layout" />
 
 
-
+    <ProgressBar
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/record_process"
+        android:layout_above="@+id/bottom_layout"
+        android:layout_marginBottom="-4dp"
+        android:layout_marginTop="-4dp"
+        style="?android:progressBarStyleHorizontal" />
     <!-- camera_bottom_bg -->
     <RelativeLayout
         android:id="@+id/bottom_layout"

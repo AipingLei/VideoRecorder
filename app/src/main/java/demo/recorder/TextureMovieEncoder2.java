@@ -91,7 +91,7 @@ public class TextureMovieEncoder2 implements Runnable {
     }
 
     /**
-     * Tells the video recorder to stop recording.  (Call from non-encoder thread.)
+     * Tells the video recorder to handleStopEvent recording.  (Call from non-encoder thread.)
      * <p>
      * Returns immediately; the encoder/muxer may not yet be finished creating the movie.
      * <p>
@@ -198,7 +198,7 @@ public class TextureMovieEncoder2 implements Runnable {
     }
 
     /**
-     * Handles a request to stop encoding.
+     * Handles a request to handleStopEvent encoding.
      */
     private void handleStopRecording() {
         Log.d(TAG, "handleStopRecording");

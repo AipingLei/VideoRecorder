@@ -61,7 +61,7 @@ public class VideoRecordCore implements TexureObserver,SurfaceTexture.OnFrameAva
     public static final int QUALITY_LOW = 4;
 
     /**
-     * record control
+     * handleRecordEvent control
      */
     private int mFrameCount;
     //private boolean mIsNotifiedPause;
@@ -155,7 +155,7 @@ public class VideoRecordCore implements TexureObserver,SurfaceTexture.OnFrameAva
         // Give the camera a hint that we're recording video.  This can have a big
         // impact on frame rate.
         parms.setRecordingHint(true);
-        parms.setPreviewSize(1080,1440);
+        //parms.setPreviewSize(1080,1440);
         // leave the frame rate set to default
         mCamera.setParameters(parms);
         // setCameraDisplayOrientation(this,id,mCamera);
@@ -235,13 +235,18 @@ public class VideoRecordCore implements TexureObserver,SurfaceTexture.OnFrameAva
     public void changeRecordingState(final int aState){
         if (null == mOutputFile) throw new IllegalStateException();
         if (this.mRecordingState == aState) return;
-        mCameraPreview.queueEvent(new Runnable() {
+        mRecordingState = aState;
+        if (aState == RECORDING_STOP){
+                    mCameraPreview.queueEvent(new Runnable() {
             @Override
             public void run() {
                 Log.d("TAG", "changeRecordingState: was " + VideoRecordCore.this.mRecordingState + " now " + aState);
                 mRecordingState = aState;
             }
         });
+        }else {
+            mRecordingState = aState;
+        }
     }
 
     public void destroy() {
@@ -327,7 +332,7 @@ public class VideoRecordCore implements TexureObserver,SurfaceTexture.OnFrameAva
     }
 
     /**
-     * description: Handle the record event, this method is kinda weird
+     * description: Handle the handleRecordEvent event, this method is kinda weird
      * because the video should only run after the first SurfaceTexture is
      * drawing, besides,the encoder need to know the textureID which to share.
      * params:
@@ -357,7 +362,7 @@ public class VideoRecordCore implements TexureObserver,SurfaceTexture.OnFrameAva
 
     private void resumeRecording() {
         if (mRecordingState != RECORDING_RESUME) return;
-        mVideoEncoder.updateSharedContext(EGL14.eglGetCurrentContext(),createFilterWrapper(mRecordFilterType,mRecordWidth,mRecordHeight));
+        //mVideoEncoder.updateSharedContext(EGL14.eglGetCurrentContext(),null);
         mRecordingState = RECORDING_RESUMED;
         if(null != mOnRecordStatusChangedListener) {
             long recordTime = mVideoEncoder.getRecordedTimeNanos() / 1000000; // 将时间转换为毫秒
@@ -383,7 +388,7 @@ public class VideoRecordCore implements TexureObserver,SurfaceTexture.OnFrameAva
         // bitrate
         long bitrate = mRecordWidth * mRecordHeight * 3 * 8 * tmpFPS / qualityParam;
 
-        Log.d(TAG, " record param：width:" + mRecordWidth + ",height:" + mRecordHeight + "bitrate:" + bitrate);
+        Log.d(TAG, " handleRecordEvent param：width:" + mRecordWidth + ",height:" + mRecordHeight + "bitrate:" + bitrate);
         mVideoEncoder.startRecording(new TextureMovieEncoder.EncoderConfig(mOutputFile, mRecordWidth, mRecordHeight, (int) bitrate, mDisplayWidth,
                 mDisplayHeight, EGL14.eglGetCurrentContext()));
         // Set the video encoder's texture name.  We only need to do this once, but in the
@@ -399,8 +404,8 @@ public class VideoRecordCore implements TexureObserver,SurfaceTexture.OnFrameAva
 
     private void pauseRecording() {
         if (mRecordingState != RECORDING_PAUSE) return;
-        mVideoEncoder.pause();
-        Log.d("TAG", "SurfaceRenderer 暂停录制");
+        mVideoEncoder.pauseRecording();
+        Log.d(TAG, "SurfaceRenderer pauseRecording");
         if (null != mOnRecordStatusChangedListener) {
             long recordTime = mVideoEncoder.getRecordedTimeNanos() / 1000000; // 将时间转换为毫秒
             mOnRecordStatusChangedListener.onRecordPaused(recordTime);
@@ -516,6 +521,10 @@ public class VideoRecordCore implements TexureObserver,SurfaceTexture.OnFrameAva
         sFilterWrapper.onOutpuSizeChanged(width, height);
         sFilterWrapper.onSurfaceSizeChanged(width, height);
         return  sFilterWrapper;
+    }
+
+    public long getReocordTime(){
+        return  mVideoEncoder.getRecordedTimeNanos()/1000000;
     }
 
 

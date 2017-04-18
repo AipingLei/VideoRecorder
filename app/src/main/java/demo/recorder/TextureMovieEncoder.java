@@ -35,7 +35,6 @@ import java.util.List;
 import demo.recorder.gles.EglCore;
 import demo.recorder.gles.WindowSurface;
 import jp.co.cyberagent.android.gpuimage.filter.FilterWrapper;
-import jp.co.cyberagent.android.gpuimage.filter.GPUImageFilter;
 
 /**
  * Encode a movie from frames rendered from an external texture image.
@@ -86,8 +85,9 @@ public class TextureMovieEncoder implements Runnable {
     private Object mReadyFence = new Object();      // guards ready/running
     private boolean mReady;
     private boolean mRunning;
-    private long mStartRecordTimeNanos = 0; // 开始录制的时间
-    private long mRecordTotalTimeNanos = 0; // 已录制的总时间
+    private long mLastRecordTimeNanos = 0; //
+    private long mPausedTimeNanos = 0; //
+    private long mRecordTotalTimeNanos = 0; //
     private List<Long> mPauseTimeStamp = new ArrayList<Long>();
     private List<Long> mResumeTimeStamp = new ArrayList<Long>();
     private boolean mPause;
@@ -169,8 +169,12 @@ public class TextureMovieEncoder implements Runnable {
         mHandler.sendMessage(mHandler.obtainMessage(MSG_START_RECORDING, config));
     }
 
+    public void pauseRecording(){
+        mPause = true;
+    }
+
     /**
-     * Tells the video recorder to stop recording.  (Call from non-encoder thread.)
+     * Tells the video recorder to handleStopEvent recording.  (Call from non-encoder thread.)
      * <p>
      * Returns immediately; the encoder/muxer may not yet be finished creating the movie.
      * <p>
@@ -190,7 +194,7 @@ public class TextureMovieEncoder implements Runnable {
         Message m = mHandler.obtainMessage(MSG_QUIT);
         m.obj = onStopOverListener;
         mHandler.sendMessage(m);
-        mStartRecordTimeNanos = 0; // 重置开始录制时间
+        mLastRecordTimeNanos = 0; // 重置开始录制时间
         mRecordTotalTimeNanos = 0;
         // We don't know when these will actually finish (or even start).  We don't want to
         // delay the UI thread though, so we return immediately.
@@ -246,6 +250,15 @@ public class TextureMovieEncoder implements Runnable {
             // important that we just ignore the frame.
             Log.w(TAG, "HEY: got SurfaceTexture with timestamp of zero");
             return;
+        }
+
+        if (mPause){
+            mPause = false;
+            mPausedTimeNanos += (timestamp-mLastRecordTimeNanos);
+            timestamp -= mPausedTimeNanos;
+            mLastRecordTimeNanos = timestamp;
+        }else {
+            timestamp -= mPausedTimeNanos;
         }
         mHandler.sendMessage(mHandler.obtainMessage(MSG_FRAME_AVAILABLE,
                 (int) (timestamp >> 32), (int) timestamp, transform));
@@ -333,7 +346,6 @@ public class TextureMovieEncoder implements Runnable {
                     break;
                 case MSG_QUIT:
                     Looper.myLooper().quit();
-                    // 通知停止编码结束
                     if (null != obj) {
                         ((OnStopOverListener) obj).onStopOver();
                     }
@@ -371,14 +383,15 @@ public class TextureMovieEncoder implements Runnable {
         mFilterWrapper.drawFrame(mTextureId, mWidth, mHeight);
         mInputWindowSurface.setPresentationTime(timestampNanos);
         mInputWindowSurface.swapBuffers();
-        if (mStartRecordTimeNanos == 0) {
-            mStartRecordTimeNanos = timestampNanos;
+        if (mLastRecordTimeNanos == 0) {
+            mLastRecordTimeNanos = timestampNanos;
         }
-        mRecordTotalTimeNanos = timestampNanos - mStartRecordTimeNanos;
+        mRecordTotalTimeNanos += timestampNanos - mLastRecordTimeNanos;
+        mLastRecordTimeNanos = timestampNanos;
     }
 
     /**
-     * Handles a request to stop encoding.
+     * Handles a request to handleStopEvent encoding.
      */
     private void handleStopRecording() {
         Log.d(TAG, "handleStopRecording");
@@ -480,13 +493,6 @@ public class TextureMovieEncoder implements Runnable {
      */
     public long getRecordedTimeNanos() {
         return this.mRecordTotalTimeNanos;
-    }
-
-    public void pause() {
-        if (!mPause) {
-            mPauseTimeStamp.add(mTimeStamp);
-            mPause = true;
-        }
     }
 
 }

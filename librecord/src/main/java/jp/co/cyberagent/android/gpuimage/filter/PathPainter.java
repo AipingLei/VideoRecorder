@@ -35,7 +35,7 @@ public class PathPainter {
 
     private final Paint mStartEndPaint;
 
-    private int mCurrentFrameCount;
+    private int mCurrentFrameIndex;
 
     private int mCurrentPathIndex = 0;
 
@@ -59,13 +59,14 @@ public class PathPainter {
 
 
     public boolean drawNext(Canvas aCanvas){
-        if (mCurrentFrameCount > mFrameCount-1 ) return false;
+        if (mCurrentFrameIndex == mFrameCount-1 ) return false;
         int sIndex = mCurrentPathIndex == mPathData.length ? mCurrentPathIndex-1:mCurrentPathIndex;
         float x =  mPathData[sIndex][0];
         float y = mPathData[sIndex][1];
-        if (mCurrentFrameCount == 0) mPath.moveTo(x,y);
+        if (mCurrentFrameIndex == 0) mPath.moveTo(x,y);
         if (mCurrentPathIndex == 0 || mCurrentPathIndex == mPathData.length){
-            drawStartEnd(aCanvas,mPathData[sIndex][0], mPathData[sIndex][1]);
+            int sFrameIndex = mCurrentPathIndex == 0 ? mCurrentFrameIndex :START_END_FRAME_COUNT-(mFrameCount - mCurrentFrameIndex -1);
+            drawStartEnd(aCanvas,sFrameIndex,mPathData[sIndex][0], mPathData[sIndex][1]);
             return  true;
         }
         drawPath(aCanvas,mPathData[sIndex][0],mPathData[sIndex][1]);
@@ -79,29 +80,27 @@ public class PathPainter {
         float cY = (y +  previousY) / 2;
         mPath.quadTo(cX, cY, x, y);
         aCanvas.drawPath(mPath,mPathPaint);
-        mCurrentFrameCount++;
+        mCurrentFrameIndex++;
         mCurrentPathIndex++;
     }
 
-    private void drawStartEnd(Canvas aCanvas,float x,float y){
+    private void drawStartEnd(Canvas aCanvas,int aFrameIndex,float x,float y){
 
-        int sFrameIndex = mCurrentFrameCount < START_END_FRAME_COUNT ? mCurrentFrameCount :
-                START_END_FRAME_COUNT-(mFrameCount - mCurrentFrameCount-1);
-        if (sFrameIndex > START_END_FRAME_COUNT - 1) return;
+        if (aFrameIndex > START_END_FRAME_COUNT - 1) return;
         //clear
         mStartEndPaint.setXfermode(clearMode);
         aCanvas.drawCircle(x,y,START_END_RADIUS_MAX,mStartEndPaint);
 
         mStartEndPaint.setXfermode(normalMode);
-        float sPointSize = (sFrameIndex+1)*mRadiusFator*START_END_PAINT_SIZE;
+        float sPointSize = (aFrameIndex+1)*mRadiusFator*START_END_PAINT_SIZE;
         mStartEndPaint.setStyle(Paint.Style.STROKE);
         mStartEndPaint.setStrokeWidth(sPointSize);
-        float radius = (sFrameIndex+1)*START_END_RADIUS_MAX*mRadiusFator;
+        float radius = (aFrameIndex+1)*START_END_RADIUS_MAX*mRadiusFator;
         aCanvas.drawCircle(x,y,radius,mStartEndPaint);
         mStartEndPaint.setStyle(Paint.Style.FILL);
         aCanvas.drawCircle(x,y,radius/3.0f,mStartEndPaint);
-        mCurrentFrameCount++;
-        if (mCurrentFrameCount == START_END_FRAME_COUNT&&mCurrentPathIndex==0){
+        mCurrentFrameIndex++;
+        if (mCurrentFrameIndex == START_END_FRAME_COUNT-1&&mCurrentPathIndex==0){
             mCurrentPathIndex++;
         }
     }
