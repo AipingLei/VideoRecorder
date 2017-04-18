@@ -404,26 +404,27 @@ public class VideoRecordCore implements TexureObserver,SurfaceTexture.OnFrameAva
 
     private void pauseRecording() {
         if (mRecordingState != RECORDING_PAUSE) return;
+        mRecordingState = RECORDING_PAUSED;
         mVideoEncoder.pauseRecording();
         Log.d(TAG, "SurfaceRenderer pauseRecording");
         if (null != mOnRecordStatusChangedListener) {
             long recordTime = mVideoEncoder.getRecordedTimeNanos() / 1000000; // 将时间转换为毫秒
             mOnRecordStatusChangedListener.onRecordPaused(recordTime);
         }
-        mRecordingState = RECORDING_PAUSED;
     }
 
     public void stopRecording() {
-        final long recordTime = mVideoEncoder.getRecordedTimeNanos() / 1000000;
         mVideoEncoder.stopRecording(new TextureMovieEncoder.OnStopOverListener() {
             @Override
             public void onStopOver() {
                 if (null != mOnRecordStatusChangedListener) {
+                    final long recordTime = mVideoEncoder.getRecordedTimeNanos() / 1000000;
+                    Log.d(TAG, "sRecordTime3->"+recordTime);
+                    mRecordingState = RECORDING_STOPPED;
                     mOnRecordStatusChangedListener.onRecordStop(mOutputFile, recordTime);
                 }
             }
         });
-        mRecordingState = RECORDING_STOPPED;
     }
 
 

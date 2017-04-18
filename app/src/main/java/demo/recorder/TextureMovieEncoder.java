@@ -71,6 +71,7 @@ public class TextureMovieEncoder implements Runnable {
     private static final int MSG_SET_TEXTURE_ID = 3;
     private static final int MSG_UPDATE_SHARED_CONTEXT = 4;
     private static final int MSG_QUIT = 5;
+    private static final int MSG_PAUSE_RECORDING = 6;
 
     // ----- accessed exclusively by encoder thread -----
     private WindowSurface mInputWindowSurface;
@@ -88,8 +89,6 @@ public class TextureMovieEncoder implements Runnable {
     private long mLastRecordTimeNanos = 0; //
     private long mPausedTimeNanos = 0; //
     private long mRecordTotalTimeNanos = 0; //
-    private List<Long> mPauseTimeStamp = new ArrayList<Long>();
-    private List<Long> mResumeTimeStamp = new ArrayList<Long>();
     private boolean mPause;
     private long mTimeStamp;
     private FilterWrapper mFilterWrapper ;
@@ -170,6 +169,7 @@ public class TextureMovieEncoder implements Runnable {
     }
 
     public void pauseRecording(){
+        //mHandler.sendMessage(mHandler.obtainMessage(MSG_START_RECORDING, config));
         mPause = true;
     }
 
@@ -187,18 +187,16 @@ public class TextureMovieEncoder implements Runnable {
         mHandler.sendMessage(mHandler.obtainMessage(MSG_QUIT));*/
         // We don't know when these will actually finish (or even start).  We don't want to
         // delay the UI thread though, so we return immediately.
-
-        mPauseTimeStamp.clear();
-        mResumeTimeStamp.clear();
         mHandler.sendMessage(mHandler.obtainMessage(MSG_STOP_RECORDING));
         Message m = mHandler.obtainMessage(MSG_QUIT);
         m.obj = onStopOverListener;
         mHandler.sendMessage(m);
-        mLastRecordTimeNanos = 0; // 重置开始录制时间
+        mLastRecordTimeNanos = 0;
         mRecordTotalTimeNanos = 0;
         // We don't know when these will actually finish (or even start).  We don't want to
         // delay the UI thread though, so we return immediately.
     }
+
 
     /**
      * Returns true if recording has been started.
@@ -379,7 +377,6 @@ public class TextureMovieEncoder implements Runnable {
     private void handleFrameAvailable(float[] transform,long timestampNanos) {
         if (VERBOSE) Log.d(TAG, "handleFrameAvailable tr=" + transform);
         mVideoEncoder.drainEncoder(false);
-
         mFilterWrapper.drawFrame(mTextureId, mWidth, mHeight);
         mInputWindowSurface.setPresentationTime(timestampNanos);
         mInputWindowSurface.swapBuffers();

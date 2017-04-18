@@ -104,12 +104,15 @@ public class CameraCaptureActivity extends Activity {
 
         @Override
         public boolean onTouch(View v, MotionEvent event) {
-            if (mMediaRecordHandler == null) {
+            if (mMediaRecordHandler == null || mMediaRecordHandler.isStopped()) {
                 return false;
             }
+
             long sRecordTime = mMediaRecordHandler.getRecordTime();
+            Log.d(TAG, "sRecordTime"+sRecordTime);
             if (sRecordTime> MAX_RECORD_TIME){
                 mMediaRecordHandler.handleStopEvent();
+                return true;
             }
             switch (event.getAction()) {
                 case MotionEvent.ACTION_DOWN:
@@ -191,6 +194,10 @@ public class CameraCaptureActivity extends Activity {
 
         public boolean isRecording(){
             return  mVideoRecordState == RECORDING_STARTED || mVideoRecordState == RECORDING_RESUMED;
+        }
+
+        public boolean isStopped(){
+            return  mVideoRecordState == RECORDING_STOPPED;
         }
 
 
