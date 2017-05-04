@@ -23,7 +23,7 @@ public class PathPainter {
 
     private final float START_END_PAINT_SIZE = 10.0f;
 
-    private static final int START_END_FRAME_COUNT = 6;
+    private static final int START_END_FRAME_COUNT = 20;
 
     private static final float START_END_RADIUS_MAX = 25.0f;
 
@@ -124,14 +124,14 @@ public class PathPainter {
     }
 
     public static PathPainter create() {
-        float[][] aPaths = new float[20][2];
-        aPaths[19][0] = Integer.MIN_VALUE;
-        aPaths[0][0] = 100.0f;
-        aPaths[0][1] = 100.0f;
+        float[][] aPaths = new float[100][2];
+        aPaths[99][0] = Integer.MIN_VALUE;
+        aPaths[0][0] = 50.0f;
+        aPaths[0][1] = 50.0f;
         int index = 1;
-        while ( aPaths[19][0] == Integer.MIN_VALUE){
-            aPaths[index][0] = aPaths[index-1][0]+ new Random().nextInt(50)*(1f);
-            aPaths[index][1] = aPaths[index-1][1]+ new Random().nextInt(50)*(1f);
+        while ( aPaths[99][0] == Integer.MIN_VALUE){
+            aPaths[index][0] = aPaths[index-1][0]+ new Random().nextInt(15)*(1f);
+            aPaths[index][1] = aPaths[index-1][1]+ new Random().nextInt(15)*(1f);
             index++;
         }
         return  new PathPainter(aPaths);

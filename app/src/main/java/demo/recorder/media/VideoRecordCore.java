@@ -235,18 +235,13 @@ public class VideoRecordCore implements TexureObserver,SurfaceTexture.OnFrameAva
     public void changeRecordingState(final int aState){
         if (null == mOutputFile) throw new IllegalStateException();
         if (this.mRecordingState == aState) return;
-        mRecordingState = aState;
-        if (aState == RECORDING_STOP){
-                    mCameraPreview.queueEvent(new Runnable() {
+        mCameraPreview.queueEvent(new Runnable() {
             @Override
             public void run() {
                 Log.d("TAG", "changeRecordingState: was " + VideoRecordCore.this.mRecordingState + " now " + aState);
                 mRecordingState = aState;
             }
         });
-        }else {
-            mRecordingState = aState;
-        }
     }
 
     public void destroy() {
@@ -360,24 +355,6 @@ public class VideoRecordCore implements TexureObserver,SurfaceTexture.OnFrameAva
     }
 
 
-    private void resumeRecording() {
-        if (mRecordingState != RECORDING_RESUME) return;
-        //mVideoEncoder.updateSharedContext(EGL14.eglGetCurrentContext(),null);
-        mRecordingState = RECORDING_RESUMED;
-        if(null != mOnRecordStatusChangedListener) {
-            long recordTime = mVideoEncoder.getRecordedTimeNanos() / 1000000; // 将时间转换为毫秒
-            mOnRecordStatusChangedListener.onRecordResume(recordTime);
-            // 暂停恢复以后的录制时长发生了变化
-            mCurTimeCalcRecordTime = System.currentTimeMillis();
-            if (mCurTimeCalcRecordTime - mLastTimeCalcRecordTime >= mIntervalNotifyRecordProcessing) {
-                mLastTimeCalcRecordTime = mCurTimeCalcRecordTime;
-                // 回调processing
-                mOnRecordStatusChangedListener.onRecordProcessing(recordTime);
-            }
-        }
-        mRecordingState = RECORDING_RESUMED;
-    }
-
     private void startRecording(int textureID) {
         if (mRecordingState != RECORDING_START) return;
         Log.d(TAG, "start recording");
@@ -410,6 +387,23 @@ public class VideoRecordCore implements TexureObserver,SurfaceTexture.OnFrameAva
         if (null != mOnRecordStatusChangedListener) {
             long recordTime = mVideoEncoder.getRecordedTimeNanos() / 1000000; // 将时间转换为毫秒
             mOnRecordStatusChangedListener.onRecordPaused(recordTime);
+        }
+    }
+
+    private void resumeRecording() {
+        if (mRecordingState != RECORDING_RESUME) return;
+        mRecordingState = RECORDING_RESUMED;
+        // mVideoEncoder.updateSharedContext(EGL14.eglGetCurrentContext(),null);
+        if(null != mOnRecordStatusChangedListener) {
+            long recordTime = mVideoEncoder.getRecordedTimeNanos() / 1000000; // 将时间转换为毫秒
+            mOnRecordStatusChangedListener.onRecordResume(recordTime);
+            // 暂停恢复以后的录制时长发生了变化
+            mCurTimeCalcRecordTime = System.currentTimeMillis();
+            if (mCurTimeCalcRecordTime - mLastTimeCalcRecordTime >= mIntervalNotifyRecordProcessing) {
+                mLastTimeCalcRecordTime = mCurTimeCalcRecordTime;
+                // 回调processing
+                mOnRecordStatusChangedListener.onRecordProcessing(recordTime);
+            }
         }
     }
 

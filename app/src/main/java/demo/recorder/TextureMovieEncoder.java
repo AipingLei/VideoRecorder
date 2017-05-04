@@ -22,6 +22,7 @@ import android.opengl.GLES20;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.provider.Settings;
 import android.util.Log;
 
 
@@ -86,7 +87,7 @@ public class TextureMovieEncoder implements Runnable {
     private Object mReadyFence = new Object();      // guards ready/running
     private boolean mReady;
     private boolean mRunning;
-    private long mLastRecordTimeNanos = 0; //
+    private long mLastRecordTimeNanos = Integer.MIN_VALUE; //
     private long mPausedTimeNanos = 0; //
     private long mRecordTotalTimeNanos = 0; //
     private boolean mPause;
@@ -169,8 +170,7 @@ public class TextureMovieEncoder implements Runnable {
     }
 
     public void pauseRecording(){
-        //mHandler.sendMessage(mHandler.obtainMessage(MSG_START_RECORDING, config));
-        mPause = true;
+        mHandler.sendMessage(mHandler.obtainMessage(MSG_PAUSE_RECORDING));
     }
 
     /**
@@ -240,6 +240,9 @@ public class TextureMovieEncoder implements Runnable {
         float[] transform = new float[16];      // TODO - avoid alloc every frame
         st.getTransformMatrix(transform);
         long timestamp = st.getTimestamp();
+        if (time==0){
+            time = timestamp;
+        }
         if (timestamp == 0) {
             // Seeing this after device is toggled off/on with power button.  The
             // first frame back has a zero timestamp.
@@ -249,18 +252,31 @@ public class TextureMovieEncoder implements Runnable {
             Log.w(TAG, "HEY: got SurfaceTexture with timestamp of zero");
             return;
         }
+        if (mLastRecordTimeNanos == Integer.MIN_VALUE){
+            mLastRecordTimeNanos = timestamp;
+        }
 
+
+       /* Log.d("timestamp", "mPause="+mPause);
+        Log.d("timestamp", "timestamp"+(timestamp-time)/1000000);
+        Log.d("timestamp", "mLastRecordTimeNanos"+(mLastRecordTimeNanos-time)/1000000);
+        Log.d("timestamp", "mPausedTimeNanos"+(mPausedTimeNanos)/1000000);*/
+        long internel = 0;
         if (mPause){
             mPause = false;
-            mPausedTimeNanos += (timestamp-mLastRecordTimeNanos);
-            timestamp -= mPausedTimeNanos;
+            //获取这次录制距上一次录制的时间间隔
+            internel = (timestamp-mLastRecordTimeNanos);
+            //暂停时间增加
+            mPausedTimeNanos += internel;
+            //重置上次录制时间
             mLastRecordTimeNanos = timestamp;
-        }else {
-            timestamp -= mPausedTimeNanos;
+            //timestamp = System.nanoTime();
         }
         mHandler.sendMessage(mHandler.obtainMessage(MSG_FRAME_AVAILABLE,
                 (int) (timestamp >> 32), (int) timestamp, transform));
     }
+
+    private long time = 0 ;
 
     /**
      * Tells the video recorder what texture name to use.  This is the external texture that
@@ -329,6 +345,9 @@ public class TextureMovieEncoder implements Runnable {
                 case MSG_STOP_RECORDING:
                     encoder.handleStopRecording();
                     break;
+                case MSG_PAUSE_RECORDING:
+                    encoder.handlePauseRecording();
+                    break;
                 case MSG_FRAME_AVAILABLE:
                     long timestamp = (((long) inputMessage.arg1) << 32) |
                             (((long) inputMessage.arg2) & 0xffffffffL);
@@ -347,7 +366,6 @@ public class TextureMovieEncoder implements Runnable {
                     if (null != obj) {
                         ((OnStopOverListener) obj).onStopOver();
                     }
-
                     break;
                 default:
                     throw new RuntimeException("Unhandled msg what=" + what);
@@ -375,16 +393,16 @@ public class TextureMovieEncoder implements Runnable {
      * @param timestampNanos The frame's timestamp, from SurfaceTexture.
      */
     private void handleFrameAvailable(float[] transform,long timestampNanos) {
-        if (VERBOSE) Log.d(TAG, "handleFrameAvailable tr=" + transform);
         mVideoEncoder.drainEncoder(false);
         mFilterWrapper.drawFrame(mTextureId, mWidth, mHeight);
-        mInputWindowSurface.setPresentationTime(timestampNanos);
+        mInputWindowSurface.setPresentationTime(timestampNanos-mPausedTimeNanos);
         mInputWindowSurface.swapBuffers();
-        if (mLastRecordTimeNanos == 0) {
-            mLastRecordTimeNanos = timestampNanos;
-        }
-        mRecordTotalTimeNanos += timestampNanos - mLastRecordTimeNanos;
+        mRecordTotalTimeNanos += (timestampNanos- mLastRecordTimeNanos);
         mLastRecordTimeNanos = timestampNanos;
+    }
+
+    private void handlePauseRecording() {
+        mPause = true;
     }
 
     /**

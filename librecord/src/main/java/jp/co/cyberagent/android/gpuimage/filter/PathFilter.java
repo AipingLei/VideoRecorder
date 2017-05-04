@@ -20,7 +20,7 @@ public class PathFilter extends GPUImageSourceOverBlendFilter {
     /**
      * The duration that the paths completely shown in seconds
      */
-    private static  final long DURATION = 1000;
+    private static  final long DURATION = 2000;
     public PathFilter(){
         super();
     }
