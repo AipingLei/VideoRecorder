@@ -13,4 +13,5 @@
         <item>Filter: edge detect</item>
         <item>Filter: emboss</item>
     </string-array>
+    <string name="title_activity_test">TestActivity</string>
 </resources>

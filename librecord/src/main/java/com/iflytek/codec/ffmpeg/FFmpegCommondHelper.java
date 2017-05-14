@@ -40,7 +40,7 @@ public final class FFmpegCommondHelper {
             if (i > 1 && args[i - 1].equals("-i")) {
                 String inputFile = args[i];
                 if (!new File(inputFile).isFile()) {
-                    return false;
+                    //return false;
                 }
             }
         }
