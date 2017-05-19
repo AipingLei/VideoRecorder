@@ -8,6 +8,7 @@ import android.os.Build;
 import android.util.Log;
 import android.widget.Toast;
 
+import demo.recorder.ContentManager;
 import demo.recorder.util.FFmpegMuxer;
 import demo.recorder.media.audio.AudioRecorderWrapper;
 import demo.recorder.media.audio.PCMDenoiser;
@@ -50,6 +51,8 @@ public class MediaRecordService implements OnRecordStatusChangedListener {
     private Activity mContext;
     private String finalFile;
 
+    private boolean mContentGenerated;
+
 
     public MediaRecordService(Activity aActivity,CameraPreview cameraPreview) {
         this.mMediaList = new ArrayList<>();
@@ -57,6 +60,7 @@ public class MediaRecordService implements OnRecordStatusChangedListener {
         initFileDir(aActivity);
         initVideoCore(cameraPreview);
         audioRecorderWrapper = new AudioRecorderWrapper(recordAudio);
+        prepareContent();
     }
 
     private void initFileDir(Activity aActivity) {
@@ -79,7 +83,7 @@ public class MediaRecordService implements OnRecordStatusChangedListener {
         mVideoRecordCore.setOnRecordStatusChangedListener(this);
         mVideoRecordCore.configOutputFile(new File(recordVideo));
         mVideoRecordCore.configRecordQualityType(VideoRecordCore.QUALITY_HIGH);
-        mVideoRecordCore.configRecordSize(1080, 1080);
+        mVideoRecordCore.configRecordSize(800, 800);
         mVideoRecordCore.configIntervalNotifyRecordProcessing(1000);
     }
 
@@ -290,6 +294,17 @@ public class MediaRecordService implements OnRecordStatusChangedListener {
                         });
                     }
                 }.start();
+            }
+        });
+    }
+
+    private void prepareContent() {
+        ContentManager sManager = ContentManager.getInstance();
+        sManager.initialize(mContext);
+        sManager.createAll(new ContentManager.ICallBack() {
+            @Override
+            public void onCompleted(int aReuslt, String aMessage) {
+                mContentGenerated = aReuslt == ContentManager.OK;
             }
         });
     }

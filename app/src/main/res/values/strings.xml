@@ -4,7 +4,10 @@
     <string name="toggleRecordingOff">Stop recording</string>
     <string name="cameraOutputFileLabel_text">Output file:</string>
     <string name="cameraOutputFile_text">[filename]</string>
-
+    <string name="play_button_text">Play</string>
+    <string name="stop_button_text">Stop</string>
+    <string name="locked60fps_checkbox">Play at 60fps</string>
+    <string name="loopPlayback_checkbox">Loop playback</string>
     <string-array name="cameraFilterNames">
         <item>Normal</item>
         <item>Black &amp; white</item>

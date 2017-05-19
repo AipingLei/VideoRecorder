@@ -30,8 +30,6 @@ public  class CameraPreview extends GLSurfaceView implements GLSurfaceView.Rende
 
     private OnSizeChangeCallback onSizeChangeCallback;
 
-    protected GL10 gl;
-
     private int mTextureId;
     private SurfaceTexture mSurfaceTexture;
     private TexureObserver mObServer;
@@ -74,7 +72,6 @@ public  class CameraPreview extends GLSurfaceView implements GLSurfaceView.Rende
         mSurfaceTexture = new SurfaceTexture(mTextureId);
         // Tell the ObServer to enable the camera preview.
         mObServer.onSurfaceCreated(mSurfaceTexture);
-        // 摄像头采集数据转换器
         mCameraInputFilter = new MagicCameraInputFilter();
         mCameraInputFilter.init();
     }
