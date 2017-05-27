@@ -85,7 +85,7 @@ public class GPUImageTwoInputFilter extends GPUImageFilter {
                         return;
                     }
                     GLES20.glActiveTexture(GLES20.GL_TEXTURE3);
-                    mFilterSourceTexture2 = OpenGLUtils.loadTexture(bitmap, OpenGLUtils.NO_TEXTURE, false);
+                    mFilterSourceTexture2 = OpenGLUtils.loadTexture(bitmap, mFilterSourceTexture2, false);
                 }
             }
         });

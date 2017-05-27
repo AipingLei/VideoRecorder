@@ -16,7 +16,12 @@
 
 package demo.recorder.media.video;
 
-/** 
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+
+
+/**
  * description: the tities of movie
  * create by: leiap
  * create date: 2017/5/19
@@ -25,10 +30,29 @@ package demo.recorder.media.video;
 */
 public class MovieTitles extends SurfaceMovie {
     private static final String TAG = "SurfaceMovie";
+
+    protected int mNumFrames = 60;
+
+    private float[] getIconXY(int aCanvasWidth, int aCanvasHeight){
+        Bitmap bitmap = getBitmap();
+        float[] xy = new float[2];
+        xy[0] = (WIDTH-)/2;
+    }
+
     @Override
     protected void generateFrame(int frameIndex) {
-
+        Canvas canvas = mInputSurface.lockCanvas(null);
+        try {
+            int width = canvas.getWidth();
+            int height = canvas.getHeight();
+            canvas.drawColor(Color.BLACK);
+            mPaint.setAlpha(255-(frameIndex*5));
+            canvas.drawBitmap(getBitmap(),(WIDTH-width)/2,height,mPaint);
+        } finally {
+            mInputSurface.unlockCanvasAndPost(canvas);
+        }
     }
+
 }
 
 

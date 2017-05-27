@@ -6,9 +6,13 @@ import android.graphics.Canvas;
 import jp.co.cyberagent.android.gpuimage.filter.base.GPUImageSourceOverBlendFilter;
 
 
-/**
- * Created by se7en on 2017/4/16.
- */
+/** 
+ * description: describe the class
+ * create by: leiap
+ * create date: 2017/5/15
+ * update date: 2017/5/15
+ * version: 1.0
+*/
 
 public class PathFilter extends GPUImageSourceOverBlendFilter {
     private Bitmap mBitmap;

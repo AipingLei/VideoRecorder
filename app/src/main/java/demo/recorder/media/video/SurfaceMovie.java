@@ -16,6 +16,8 @@
 
 package demo.recorder.media.video;
 
+import android.graphics.Bitmap;
+import android.graphics.Paint;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
@@ -40,8 +42,8 @@ public abstract class SurfaceMovie implements Content {
     private static final boolean VERBOSE = false;
 
     private static final String MIME_TYPE = "video/avc";
-    private static final int WIDTH = 800;
-    private static final int HEIGHT = 800;
+    public static final int WIDTH = 800;
+    public static final int HEIGHT = 800;
     private static final int BIT_RATE = 5000000;
     private static final int FRAMES_PER_SECOND = 30;
     private static final int IFRAME_INTERVAL = 1;
@@ -50,11 +52,17 @@ public abstract class SurfaceMovie implements Content {
     private MediaCodec.BufferInfo mBufferInfo;
     private MediaCodec mEncoder;
     private MediaMuxer mMuxer;
-    private Surface mInputSurface;
+    protected Surface mInputSurface;
     private int mTrackIndex;
     private boolean mMuxerStarted;
     private long mFakePts;
     protected int mNumFrames = 0;
+
+    Paint mPaint;
+
+    public SurfaceMovie() {
+        mPaint = new Paint();
+    }
 
     /**
      * Returns true if the codec has a software implementation.
